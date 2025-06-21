@@ -53,6 +53,7 @@ class Base:
         self.strings = parent.strings
         self.bindata = []
         self.offset = 0
+        self.startpos = 0
 
     def binVarRead(self, bindata, size):
         if size == 2:
@@ -153,6 +154,7 @@ class Base:
 
 class preamble(Base):
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.pdi_ctrl = self.binVarRead(bindata, 2)  # 0
@@ -192,7 +194,7 @@ class preamble(Base):
         pass
 
     def Info(self, prefix=""):
-        print(f"{prefix}preamble:")
+        print(f"{prefix}preamble: {self.startpos}")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
@@ -211,6 +213,7 @@ class preamble(Base):
 
 class stdconfig(Base):
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.vendor_id = self.binVarRead(bindata, 4)  # 0
@@ -285,7 +288,7 @@ class stdconfig(Base):
             Type.set("RevisionNo", self.value2xml(self.revision_id, 8))
 
     def Info(self, prefix=""):
-        print(f"{prefix}stdconfig:")
+        print(f"{prefix}stdconfig: {self.startpos}")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
@@ -314,6 +317,7 @@ class general(Base):
     cat_type = 30
 
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.groupindex = self.binVarRead(bindata, 1)  # 0
@@ -397,7 +401,7 @@ class general(Base):
             Type.text = self.value2xmlText(self.orderindex)
 
     def Info(self, prefix=""):
-        print(f"{prefix}general:")
+        print(f"{prefix}general: {self.startpos}")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
@@ -427,6 +431,7 @@ class txpdo(Base):
     cat_type = 50
 
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.index = self.binVarRead(bindata, 2)  # 0
@@ -488,7 +493,7 @@ class txpdo(Base):
             entry.xmlWrite(element)
 
     def Info(self, prefix=""):
-        print(f"{prefix}txpdo:")
+        print(f"{prefix}txpdo: {self.startpos}")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
@@ -511,6 +516,7 @@ class rxpdo(Base):
     cat_type = 51
 
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.index = self.binVarRead(bindata, 2)  # 0
@@ -572,7 +578,7 @@ class rxpdo(Base):
             entry.xmlWrite(element)
 
     def Info(self, prefix=""):
-        print(f"{prefix}rxpdo:")
+        print(f"{prefix}rxpdo: {self.startpos}")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
@@ -593,6 +599,7 @@ class rxpdo(Base):
 
 class pdo_entry(Base):
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.index = self.binVarRead(bindata, 2)  # 0
@@ -655,6 +662,7 @@ class fmmu(Base):
     cat_type = 40
 
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.entrys = {}
@@ -685,7 +693,7 @@ class fmmu(Base):
         pass
 
     def Info(self, prefix=""):
-        print(f"{prefix}fmmu:")
+        print(f"{prefix}fmmu: {self.startpos}")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
@@ -700,6 +708,7 @@ class fmmu(Base):
 
 class fmmu_entry(Base):
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.usage = self.binVarRead(bindata, 1)  # 0
@@ -734,6 +743,7 @@ class syncm(Base):
     cat_type = 41
 
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.entrys = {}
@@ -770,7 +780,7 @@ class syncm(Base):
             entry.xmlWrite(base_element)
 
     def Info(self, prefix=""):
-        print(f"{prefix}syncm:")
+        print(f"{prefix}syncm: {self.startpos}")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
@@ -785,6 +795,7 @@ class syncm(Base):
 
 class syncm_entry(Base):
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.phys_address = self.binVarRead(bindata, 2)  # 0
@@ -843,6 +854,7 @@ class dclock(Base):
     cat_type = 60
 
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
         self.cycleTime0 = self.binVarRead(bindata, 4)  # 0
@@ -882,7 +894,7 @@ class dclock(Base):
         pass
 
     def Info(self, prefix=""):
-        print(f"{prefix}dclock:")
+        print(f"{prefix}dclock: {self.startpos}")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
@@ -905,6 +917,7 @@ class strings(Base):
     fill = 0
 
     def binRead(self, bindata):
+        self.startpos = self.parent.startpos
         self.bindata = bindata
         self.strings = [""]
         self.offset = 0
@@ -944,7 +957,7 @@ class strings(Base):
 
     def Info(self, prefix=""):
         self.num_strings = len(self.parent.strings[1:])
-        print(f"{prefix}strings:")
+        print(f"{prefix}strings: {self.startpos}")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
@@ -954,6 +967,42 @@ class strings(Base):
         self.printKeyValue("Strings", self.num_strings, prefix)
         for tn, text in enumerate(self.strings):
             self.printKeyValue(f"{tn}", f"'{text}'", prefix)
+        print("")
+
+
+
+class unknown_cat(Base):
+    cat_size = 0
+    cat_type = 99
+
+    def binRead(self, bindata):
+        self.data = bindata
+        return len(bindata)
+
+    def binWrite(self):
+        bindata = self.data
+        return bindata
+
+    def size(self):
+        return self.cat_size
+
+    def xmlRead(self, base_element):
+        pass
+
+    def xmlWrite(self, base_element):
+        pass
+
+    def Info(self, prefix=""):
+        print(f"{prefix}UNKNOWN CATALOG: {self.startpos}")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+
+        self.printKeyValue("Type-Id", self.cat_type, prefix)
+        self.printKeyValue("Cat-Size", self.cat_size, prefix)
         print("")
 
 
@@ -1009,8 +1058,10 @@ class Esi(Base):
             cat_num += 1
 
     def binRead(self, bindata):
+        self.startpos = 0
         self.offset = 0
         self.offset += self.preamble.binRead(bindata[0 : 0 + self.preamble.size()])
+        self.startpos = self.offset
         self.offset += self.stdconfig.binRead(bindata[self.offset : self.offset + self.stdconfig.size()])
         # read catalogs
         cat_num = 0
@@ -1023,6 +1074,7 @@ class Esi(Base):
             cat_size = self.binVarRead(bindata, 2) * 2
             if cat_name in cat_mapping:
                 self.catalogs[cat_num] = cat_mapping[cat_name](self)
+                self.startpos = self.offset
                 self.catalogs[cat_num].binRead(bindata[self.offset : self.offset + cat_size])
                 if cat_name == "strings":
                     self.strings = self.catalogs[cat_num].strings
@@ -1030,7 +1082,15 @@ class Esi(Base):
                 print("###############################################################")
                 print("Unknown catalog")
                 print(f" Num:{cat_num}, Name:{cat_name}, Type:{cat_type}, Size:{cat_size}")
+                print(bindata[self.offset : self.offset + cat_size])
+                print(list(bindata[self.offset : self.offset + cat_size]))
                 print("###############################################################")
+                self.catalogs[cat_num] = unknown_cat(self)
+                self.catalogs[cat_num].cat_type = cat_type
+                self.catalogs[cat_num].cat_size = cat_size
+                self.startpos = self.offset
+                self.catalogs[cat_num].binRead(bindata[self.offset : self.offset + cat_size])
+
             self.offset += cat_size
             cat_num += 1
 
