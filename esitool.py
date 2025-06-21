@@ -1154,7 +1154,7 @@ class Esi(Base):
         for cat_num, catalog in self.catalogs.items():
             catalog.xmlWrite(root)
 
-        print(etree.tostring(root, pretty_print=True).decode())
+        return etree.tostring(root, pretty_print=True).decode()
 
     def Info(self, prefix=""):
         self.preamble.Info(prefix)
@@ -1236,8 +1236,8 @@ elif args.filename.endswith(".xml"):
 
 
 if args.info:
-    res = esi.Info()
-    print(res)
+    esi.Info()
+
 if args.xml:
     res = esi.xmlWrite()
     print(res)
