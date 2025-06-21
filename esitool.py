@@ -153,6 +153,23 @@ class Base:
 
 
 class preamble(Base):
+    def crc8byte(self, crc, b):
+        crc = crc ^ b
+        for i in range(8):
+            if (crc & 0x80) == 0x80:
+                crc = (crc << 1) ^ 0x07
+            else:
+                crc <<= 1
+        while crc > 255:
+            crc -= 256
+        return crc
+
+    def csum(self, bindata):
+        crc = 255
+        for byte in bindata:
+            crc = self.crc8byte(crc, byte)
+        return crc
+
     def binRead(self, bindata):
         self.startpos = self.parent.startpos
         self.bindata = bindata
@@ -162,10 +179,15 @@ class preamble(Base):
         self.sync_impulse = self.binVarRead(bindata, 2)  # 4
         self.pdi_conf2 = self.binVarRead(bindata, 2)  # 6
         self.alias = self.binVarRead(bindata, 2)  # 8
-        self.offset += 4  # 10
+        self.reserved1 = self.binVarRead(bindata, 4)  # 10
         self.checksum = self.binVarRead(bindata, 2)  # 14
         if self.offset != self.size():
             print("SIZE ERROR:", self, self.offset, self.size())
+
+        crc = self.csum(bindata[:14])
+        if crc == self.checksum:
+            print("OK")
+
         return self.offset
 
     def binWrite(self):
@@ -175,7 +197,8 @@ class preamble(Base):
         bindata += self.binVarWrite(self.sync_impulse, 2)  # 4
         bindata += self.binVarWrite(self.pdi_conf2, 2)  # 6
         bindata += self.binVarWrite(self.alias, 2)  # 8
-        bindata += [0] * 4  # 10
+        bindata += self.binVarWrite(self.reserved1, 4)  # 10
+        self.checksum = self.csum(bindata[:14])
         bindata += self.binVarWrite(self.checksum, 2)  # 14
         return bindata
 
@@ -189,6 +212,26 @@ class preamble(Base):
         self.pdi_conf2 = 0
         self.alias = 0
         self.checksum = 0
+
+        configDataElement = base_element.find("./Descriptions/Devices/Device/Eeprom/ConfigData")
+        if configDataElement is not None:
+            configData = bytearray.fromhex(configDataElement.text)
+            cpos = 0
+            if len(configData) >= cpos + 2:
+                self.pdi_ctrl = struct.unpack(f"<H", configData[cpos : cpos + 2])[0]
+            cpos += 2
+            if len(configData) >= cpos + 2:
+                self.pdi_conf = struct.unpack(f"<H", configData[cpos : cpos + 2])[0]
+            cpos += 2
+            if len(configData) >= cpos + 2:
+                self.sync_impulse = struct.unpack(f"<H", configData[cpos : cpos + 2])[0]
+            cpos += 2
+            if len(configData) >= cpos + 2:
+                self.pdi_conf2 = struct.unpack(f"<H", configData[cpos : cpos + 2])[0]
+            cpos += 2
+            if len(configData) >= cpos + 2:
+                self.alias = struct.unpack(f"<H", configData[cpos : cpos + 2])[0]
+            cpos += 2
 
     def xmlWrite(self, prefix=""):
         pass
@@ -865,7 +908,7 @@ class dclock(Base):
         self.sync0CycleFactor = self.binVarRead(bindata, 2)  # 16
         self.nameIdx = self.binVarRead(bindata, 1)  # 18
         self.descIdx = self.binVarRead(bindata, 1)  # 19
-        self.unknown1 = bindata[self.offset:self.offset+28]  # 20
+        self.unknown1 = bindata[self.offset : self.offset + 28]  # 20
         self.offset += 28
         if self.offset != self.size():
             print("SIZE ERROR:", self, self.offset, self.size())
@@ -968,7 +1011,6 @@ class strings(Base):
         for tn, text in enumerate(self.strings):
             self.printKeyValue(f"{tn}", f"'{text}'", prefix)
         print("")
-
 
 
 class unknown_cat(Base):
@@ -1184,7 +1226,7 @@ if args.filename.endswith(".bin") or args.filename.endswith(".hex"):
                 print(f"{pos} {bindata[pos]:8d} {bindata_new[pos]:8d}")
 
 elif args.filename.endswith(".xml"):
-    xmldata = open(args.filename, "r").read()
+    xmldata = open(args.filename, "rb").read()
     esi.xmlRead(xmldata)
 
 
