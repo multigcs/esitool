@@ -2,6 +2,7 @@
 #
 #
 
+import argparse
 from lxml import etree
 import json
 import sys
@@ -102,6 +103,21 @@ class Base:
         else:
             print(f"{prefix}   {key:23} {value:6s}")
 
+    def value2xmlText(self, value):
+        if value < len(self.parent.strings):
+            text = self.parent.strings[value]
+            return text
+        return str(value)
+
+    def value2xml(self, value, size):
+        if size == 2:
+            return f"#x{value:02x}"
+        elif size == 4:
+            return f"#x{value:04x}"
+        elif size == 8:
+            return f"#x{value:08x}"
+        return str(value)
+
     def xml_value_parse(self, value):
         if value and value.startswith("#x"):
             value = int(value.replace("#x", "0x"), 0)
@@ -156,6 +172,9 @@ class preamble(Base):
         self.pdi_conf2 = 0
         self.alias = 0
         self.checksum = 0
+
+    def xmlWrite(self, prefix=""):
+        pass
 
     def Info(self, prefix=""):
         print(f"{prefix}preamble:")
@@ -238,6 +257,12 @@ class stdconfig(Base):
         self.mailbox_protocol = 0
         self.eeprom_size = 0
         self.version = 1
+
+    def xmlWrite(self, base_element):
+        Vendor = base_element.find("./Vendor")
+        etree.SubElement(Vendor, "Id").text = str(self.vendor_id)
+        Device = base_element.find("./Descriptions/Devices/Device")
+        etree.SubElement(Device, "Type", ProductCode=self.value2xml(self.product_id, 8), RevisionNo=self.value2xml(self.revision_id, 8))
 
     def Info(self, prefix=""):
         print(f"{prefix}stdconfig:")
@@ -329,6 +354,10 @@ class general(Base):
         self.phys_port = 0
         self.physical_address = 0
 
+    def xmlWrite(self, base_element):
+        Device = base_element.find("./Descriptions/Devices/Device")
+        etree.SubElement(Device, "Name").text = self.value2xmlText(self.nameindex)
+
     def Info(self, prefix=""):
         print(f"{prefix}general:")
         print(f"{prefix}   bin:", self.bindata)
@@ -413,6 +442,14 @@ class txpdo(Base):
             self.entrys[entry_num].xmlRead(entry)
             entry_num += 1
 
+    def xmlWrite(self, base_element):
+        Device = base_element.find("./Descriptions/Devices/Device")
+        element = etree.SubElement(Device, "TxPdo", Sm=str(self.syncmanager), Fixed="1", Mandatory="1")
+        etree.SubElement(element, "Index").text = self.value2xml(self.index, 4)
+        etree.SubElement(element, "Name").text = self.value2xmlText(self.name_index)
+        for num, entry in self.entrys.items():
+            entry.xmlWrite(element)
+
     def Info(self, prefix=""):
         print(f"{prefix}txpdo:")
         print(f"{prefix}   bin:", self.bindata)
@@ -490,6 +527,14 @@ class rxpdo(Base):
             self.entrys[entry_num].xmlRead(entry)
             entry_num += 1
 
+    def xmlWrite(self, base_element):
+        Device = base_element.find("./Descriptions/Devices/Device")
+        element = etree.SubElement(Device, "TxPdo", Sm=str(self.syncmanager), Fixed="1", Mandatory="1")
+        etree.SubElement(element, "Index").text = self.value2xml(self.index, 4)
+        etree.SubElement(element, "Name").text = self.value2xmlText(self.name_index)
+        for num, entry in self.entrys.items():
+            entry.xmlWrite(element)
+
     def Info(self, prefix=""):
         print(f"{prefix}rxpdo:")
         print(f"{prefix}   bin:", self.bindata)
@@ -543,6 +588,14 @@ class pdo_entry(Base):
         self.bit_length = int(self.xml_value_parse(base_element.find("./BitLen").text))
         self.flags = 0
 
+    def xmlWrite(self, base_element):
+        Entry = etree.SubElement(base_element, "Entry")
+        etree.SubElement(Entry, "Index").text = self.value2xml(self.index, 4)
+        etree.SubElement(Entry, "SubIndex").text = str(self.subindex)
+        etree.SubElement(Entry, "BitLen").text = str(self.bit_length)
+        etree.SubElement(Entry, "Name").text = self.value2xmlText(self.string_index)
+        etree.SubElement(Entry, "DataType").text = str(self.data_type)
+
     def Info(self, prefix=""):
         print(f"{prefix}pdo_entry:")
         print(f"{prefix}   bin:", self.bindata)
@@ -591,6 +644,9 @@ class fmmu(Base):
     def xmlRead(self, base_element):
         pass
 
+    def xmlWrite(self, base_element):
+        pass
+
     def Info(self, prefix=""):
         print(f"{prefix}fmmu:")
         print(f"{prefix}   bin:", self.bindata)
@@ -619,6 +675,9 @@ class fmmu_entry(Base):
 
     def size(self):
         return 1
+
+    def xmlWrite(self, base_element):
+        pass
 
     def Info(self, prefix=""):
         print(f"{prefix}fmmu_entry:")
@@ -668,6 +727,10 @@ class syncm(Base):
             self.entrys[entry_num].xmlRead(syncm)
             entry_num += 1
 
+    def xmlWrite(self, base_element):
+        for num, entry in self.entrys.items():
+            entry.xmlWrite(base_element)
+
     def Info(self, prefix=""):
         print(f"{prefix}syncm:")
         print(f"{prefix}   bin:", self.bindata)
@@ -714,6 +777,10 @@ class syncm_entry(Base):
         self.status = 0
         self.enable = int(self.xml_value_parse(base_element.get("Enable", 0)))
         self.type = 0
+
+    def xmlWrite(self, base_element):
+        Device = base_element.find("./Descriptions/Devices/Device")
+        etree.SubElement(Device, "Sm", Enable=str(self.enable), StartAddress=self.value2xml(self.phys_address, 4), ControlByte=self.value2xml(self.control, 2), DefaultSize=str(self.lenght))
 
     def Info(self, prefix=""):
         print(f"{prefix}syncm_entry:")
@@ -762,6 +829,12 @@ class dclock(Base):
 
     def size(self):
         return 20
+
+    def xmlRead(self, base_element):
+        pass
+
+    def xmlWrite(self, base_element):
+        pass
 
     def Info(self, prefix=""):
         print(f"{prefix}dclock:")
@@ -816,7 +889,14 @@ class strings(Base):
     def size(self):
         return 20
 
+    def xmlRead(self, base_element):
+        pass
+
+    def xmlWrite(self, base_element):
+        pass
+
     def Info(self, prefix=""):
+        self.num_strings = len(self.parent.strings[1:])
         print(f"{prefix}strins:")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
@@ -844,6 +924,7 @@ cat_mapping = {
 
 class Esi(Base):
     def __init__(self):
+        self.offset = 0
         self.catalogs = {}
         self.strings = [""]
         self.preamble = preamble(self)
@@ -855,21 +936,30 @@ class Esi(Base):
         self.preamble.xmlRead(root)
         self.stdconfig.xmlRead(root)
 
+        cat_num = 0
         self.catalogs = {}
 
-        self.catalogs[0] = general(self)
-        self.catalogs[0].xmlRead(root)
+        self.catalogs[cat_num] = strings(self)
+        self.catalogs[cat_num].xmlRead(root)
+        cat_num += 1
 
-        self.catalogs[1] = syncm(self)
-        self.catalogs[1].xmlRead(root)
+        self.catalogs[cat_num] = general(self)
+        self.catalogs[cat_num].xmlRead(root)
+        cat_num += 1
+
+        self.catalogs[cat_num] = syncm(self)
+        self.catalogs[cat_num].xmlRead(root)
+        cat_num += 1
 
         for pdo in root.findall(f"./Descriptions/Devices/Device/TxPdo"):
-            self.catalogs[1] = txpdo(self)
-            self.catalogs[1].xmlRead(pdo)
+            self.catalogs[cat_num] = txpdo(self)
+            self.catalogs[cat_num].xmlRead(pdo)
+            cat_num += 1
 
         for pdo in root.findall(f"./Descriptions/Devices/Device/RxPdo"):
-            self.catalogs[1] = rxpdo(self)
-            self.catalogs[1].xmlRead(pdo)
+            self.catalogs[cat_num] = rxpdo(self)
+            self.catalogs[cat_num].xmlRead(pdo)
+            cat_num += 1
 
     def binRead(self, bindata):
         self.offset = 0
@@ -897,6 +987,20 @@ class Esi(Base):
             self.offset += cat_size
             cat_num += 1
 
+    def xmlWrite(self):
+        root = etree.Element("EtherCATInfo")
+        Vendor = etree.SubElement(root, "Vendor")
+        Descriptions = etree.SubElement(root, "Descriptions")
+        Devices = etree.SubElement(Descriptions, "Devices")
+        Device = etree.SubElement(Devices, "Device")
+
+        self.preamble.xmlWrite(root)
+        self.stdconfig.xmlWrite(root)
+        for cat_num, catalog in self.catalogs.items():
+            catalog.xmlWrite(root)
+
+        print(etree.tostring(root, pretty_print=True).decode())
+
     def Info(self, prefix=""):
         self.preamble.Info(prefix)
         self.stdconfig.Info(prefix)
@@ -906,10 +1010,8 @@ class Esi(Base):
 
     def binWrite(self):
         bindata = []
-
         bindata += self.preamble.binWrite()
         bindata += self.stdconfig.binWrite()
-
         for cat_num, catalog in self.catalogs.items():
             cat_bindata = catalog.binWrite()
             cat_size = len(cat_bindata)
@@ -948,28 +1050,42 @@ def readeeprom(filename):
     return None
 
 
-filename = sys.argv[1]
+parser = argparse.ArgumentParser()
+parser.add_argument("--info", "-i", help="show info", default=False, action="store_true")
+parser.add_argument("--xml", "-x", help="export xml", default=False, action="store_true")
+parser.add_argument("--bin", "-b", help="export eeprom", default=False, action="store_true")
+parser.add_argument("--comp", "-c", help="compare bin", default=False, action="store_true")
+parser.add_argument("filename", help="input filename .xml|.bin|.hex", nargs="?", type=str, default="")
+args = parser.parse_args()
 
 esi = Esi()
 
-if filename.endswith(".bin") or filename.endswith(".hex"):
-    bindata = readeeprom(filename)
-    # print(bindata)
+if args.filename.endswith(".bin") or args.filename.endswith(".hex"):
+    bindata = readeeprom(args.filename)
     esi.binRead(bindata)
-    esi.Info()
 
-    bindata_new = esi.binWrite()
-    print(list(bindata))
-    print("")
-    print(list(bindata_new))
-    print("")
-    if list(bindata) == list(bindata_new):
-        print("------- OK -------")
-    for pos in range(len(bindata)):
-        if bindata[pos] != bindata_new[pos]:
-            print(f"{pos} {bindata[pos]:8d} {bindata_new[pos]:8d}")
+    if args.comp:
+        bindata_new = esi.binWrite()
+        print(list(bindata))
+        print("")
+        print(list(bindata_new))
+        print("")
+        if list(bindata) == list(bindata_new):
+            print("------- OK -------")
+        for pos in range(len(bindata)):
+            if bindata[pos] != bindata_new[pos]:
+                print(f"{pos} {bindata[pos]:8d} {bindata_new[pos]:8d}")
 
-elif filename.endswith(".xml"):
-    xmldata = open(filename, "r").read()
+elif args.filename.endswith(".xml"):
+    xmldata = open(args.filename, "r").read()
     esi.xmlRead(xmldata)
+
+
+if args.info:
     esi.Info()
+if args.xml:
+    res = esi.xmlWrite()
+    print(res)
+if args.bin:
+    res = esi.binWrite()
+    print(res)
