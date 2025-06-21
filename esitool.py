@@ -109,6 +109,15 @@ class Base:
             return text
         return str(value)
 
+    def value2xmlBool(self, value):
+        if value:
+            return "true"
+        return "false"
+
+    def value2xmlDatatype(self, value):
+        value = datatypes.get(value, value)
+        return str(value)
+
     def value2xml(self, value, size):
         if size == 2:
             return f"#x{value:02x}"
@@ -444,7 +453,7 @@ class txpdo(Base):
 
     def xmlWrite(self, base_element):
         Device = base_element.find("./Descriptions/Devices/Device")
-        element = etree.SubElement(Device, "TxPdo", Sm=str(self.syncmanager), Fixed="1", Mandatory="1")
+        element = etree.SubElement(Device, "TxPdo", Sm=str(self.syncmanager), Fixed=self.value2xmlBool(1), Mandatory=self.value2xmlBool(1))
         etree.SubElement(element, "Index").text = self.value2xml(self.index, 4)
         etree.SubElement(element, "Name").text = self.value2xmlText(self.name_index)
         for num, entry in self.entrys.items():
@@ -529,7 +538,7 @@ class rxpdo(Base):
 
     def xmlWrite(self, base_element):
         Device = base_element.find("./Descriptions/Devices/Device")
-        element = etree.SubElement(Device, "TxPdo", Sm=str(self.syncmanager), Fixed="1", Mandatory="1")
+        element = etree.SubElement(Device, "RxPdo", Sm=str(self.syncmanager), Fixed=self.value2xmlBool(1), Mandatory=self.value2xmlBool(1))
         etree.SubElement(element, "Index").text = self.value2xml(self.index, 4)
         etree.SubElement(element, "Name").text = self.value2xmlText(self.name_index)
         for num, entry in self.entrys.items():
@@ -594,7 +603,7 @@ class pdo_entry(Base):
         etree.SubElement(Entry, "SubIndex").text = str(self.subindex)
         etree.SubElement(Entry, "BitLen").text = str(self.bit_length)
         etree.SubElement(Entry, "Name").text = self.value2xmlText(self.string_index)
-        etree.SubElement(Entry, "DataType").text = str(self.data_type)
+        etree.SubElement(Entry, "DataType").text = self.value2xmlDatatype(self.data_type)
 
     def Info(self, prefix=""):
         print(f"{prefix}pdo_entry:")
@@ -951,13 +960,13 @@ class Esi(Base):
         self.catalogs[cat_num].xmlRead(root)
         cat_num += 1
 
-        for pdo in root.findall(f"./Descriptions/Devices/Device/TxPdo"):
-            self.catalogs[cat_num] = txpdo(self)
+        for pdo in root.findall(f"./Descriptions/Devices/Device/RxPdo"):
+            self.catalogs[cat_num] = rxpdo(self)
             self.catalogs[cat_num].xmlRead(pdo)
             cat_num += 1
 
-        for pdo in root.findall(f"./Descriptions/Devices/Device/RxPdo"):
-            self.catalogs[cat_num] = rxpdo(self)
+        for pdo in root.findall(f"./Descriptions/Devices/Device/TxPdo"):
+            self.catalogs[cat_num] = txpdo(self)
             self.catalogs[cat_num].xmlRead(pdo)
             cat_num += 1
 
@@ -1082,7 +1091,8 @@ elif args.filename.endswith(".xml"):
 
 
 if args.info:
-    esi.Info()
+    res = esi.Info()
+    print(res)
 if args.xml:
     res = esi.xmlWrite()
     print(res)
