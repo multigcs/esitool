@@ -144,7 +144,6 @@ class Base:
             for element in result:
                 if attribute:
                     value = element.get(attribute)
-                    print()
                 else:
                     value = element.text
                 value = self.xml_value_parse(value)
@@ -218,7 +217,6 @@ class preamble(Base):
         configDataElement = base_element.find("./Descriptions/Devices/Device/Eeprom/ConfigData")
         if configDataElement is not None:
             configData = bytearray.fromhex(configDataElement.text)
-
             cpos = 0
             if len(configData) >= cpos + 2:
                 self.pdi_ctrl = struct.unpack(f"<H", configData[cpos : cpos + 2])[0]
@@ -521,7 +519,6 @@ class txpdo(Base):
         self.dcsync = 0
         self.name_index = self.stringSet(base_element.find("./Name").text)
         self.flags = 0
-
         self.entrys = {}
         entry_num = 0
         for entry in base_element.findall("./Entry"):
@@ -606,7 +603,6 @@ class rxpdo(Base):
         self.dcsync = 0
         self.name_index = self.stringSet(base_element.find("./Name").text)
         self.flags = 0
-
         self.entrys = {}
         entry_num = 0
         for entry in base_element.findall("./Entry"):
@@ -1233,7 +1229,6 @@ if args.filename.endswith(".bin") or args.filename.endswith(".hex"):
 elif args.filename.endswith(".xml"):
     xmldata = open(args.filename, "rb").read()
     esi.xmlRead(xmldata)
-
 
 if args.info:
     esi.Info()
