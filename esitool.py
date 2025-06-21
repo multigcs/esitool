@@ -83,8 +83,12 @@ class Base:
         return string_index
 
     def datatypeSet(self, datatype):
-        datatype_index = list(datatypes.values()).index(datatype)
-        return datatype_index
+        dlist = list(datatypes.values())
+        datatype = datatype.replace("UINT16", "UINT").replace("UINT8", "UINT").replace("UINT32", "UINT")
+        if datatype in dlist:
+            datatype_index = dlist.index(datatype)
+            return datatype_index
+        return 0
 
     def printKeyDatatype(self, key, value, prefix=""):
         datatype = datatypes.get(value, "UNSET")
@@ -275,7 +279,10 @@ class stdconfig(Base):
         Vendor = base_element.find("./Vendor")
         etree.SubElement(Vendor, "Id").text = str(self.vendor_id)
         Device = base_element.find("./Descriptions/Devices/Device")
-        etree.SubElement(Device, "Type", ProductCode=self.value2xml(self.product_id, 8), RevisionNo=self.value2xml(self.revision_id, 8))
+        Type = Device.find("./Type")
+        if Type is not None:
+            Type.set("ProductCode", self.value2xml(self.product_id, 8))
+            Type.set("RevisionNo", self.value2xml(self.revision_id, 8))
 
     def Info(self, prefix=""):
         print(f"{prefix}stdconfig:")
@@ -367,7 +374,7 @@ class general(Base):
     def xmlRead(self, base_element):
         self.groupindex = 0
         self.imageindex = 0
-        self.orderindex = 0
+        self.orderindex = self.stringSet(self.xml_value(base_element, "./Descriptions/Devices/Device/Type")[0])
         self.nameindex = self.stringSet(self.xml_value(base_element, "./Descriptions/Devices/Device/Name")[0])
         self.unknown1 = 0
         self.coe_details = 0
@@ -385,6 +392,9 @@ class general(Base):
     def xmlWrite(self, base_element):
         Device = base_element.find("./Descriptions/Devices/Device")
         etree.SubElement(Device, "Name").text = self.value2xmlText(self.nameindex)
+        Type = Device.find("./Type")
+        if Type is not None:
+            Type.text = self.value2xmlText(self.orderindex)
 
     def Info(self, prefix=""):
         print(f"{prefix}general:")
@@ -1030,6 +1040,7 @@ class Esi(Base):
         Descriptions = etree.SubElement(root, "Descriptions")
         Devices = etree.SubElement(Descriptions, "Devices")
         Device = etree.SubElement(Devices, "Device")
+        Type = etree.SubElement(Device, "Type")
 
         self.preamble.xmlWrite(root)
         self.stdconfig.xmlWrite(root)
