@@ -313,7 +313,7 @@ class general(Base):
         self.imageindex = self.binVarRead(bindata, 1)  # 1
         self.orderindex = self.binVarRead(bindata, 1)  # 2
         self.nameindex = self.binVarRead(bindata, 1)  # 3
-        self.offset += 1  # 4
+        self.unknown1 = self.binVarRead(bindata, 1)  # 4
         # Bit 0: Enable SDO
         # Bit 1: Enable SDO Info
         # Bit 2: Enable PDO Assign
@@ -332,10 +332,10 @@ class general(Base):
         # Bit 3,4: Selection of identification method as defined in Table 22
         self.flags = self.binVarRead(bindata, 1)  # 11
         self.current_ebus = self.binVarRead(bindata, 2)  # 12
-        self.offset += 1  # 14
+        self.unknown2 = self.binVarRead(bindata, 1)  # 14
         self.phys_port = self.binVarRead(bindata, 2)  # 15
         self.physical_address = self.binVarRead(bindata, 2)  # 17
-        #self.offset += 13  # 19
+        self.offset += 13  # 19
         if self.offset != self.size():
             print("SIZE ERROR:", self, self.offset, self.size())
         return self.offset
@@ -346,7 +346,7 @@ class general(Base):
         bindata += self.binVarWrite(self.imageindex, 1)  # 1
         bindata += self.binVarWrite(self.orderindex, 1)  # 2
         bindata += self.binVarWrite(self.nameindex, 1)  # 3
-        bindata += [0] * 1  # 4
+        bindata += self.binVarWrite(self.unknown1, 1)  # 4
         bindata += self.binVarWrite(self.coe_details, 1)  # 5
         bindata += self.binVarWrite(self.foe_details, 1)  # 6
         bindata += self.binVarWrite(self.eoe_enabled, 1)  # 7
@@ -355,21 +355,21 @@ class general(Base):
         bindata += self.binVarWrite(self.sysman_class, 1)  # 10
         bindata += self.binVarWrite(self.flags, 1)  # 11
         bindata += self.binVarWrite(self.current_ebus, 2)  # 12
-        bindata += [0] * 1  # 14
+        bindata += self.binVarWrite(self.unknown2, 1)  # 14
         bindata += self.binVarWrite(self.phys_port, 2)  # 15
         bindata += self.binVarWrite(self.physical_address, 2)  # 17
         bindata += [0] * 13  # 19
         return bindata
 
     def size(self):
-        return 19
-        #return 32
+        return 32
 
     def xmlRead(self, base_element):
         self.groupindex = 0
         self.imageindex = 0
         self.orderindex = 0
         self.nameindex = self.stringSet(self.xml_value(base_element, "./Descriptions/Devices/Device/Name")[0])
+        self.unknown1 = 0
         self.coe_details = 0
         self.foe_details = 0
         self.eoe_enabled = 0
@@ -378,6 +378,7 @@ class general(Base):
         self.sysman_class = 0
         self.flags = 0
         self.current_ebus = 0
+        self.unknown2 = 0
         self.phys_port = 0
         self.physical_address = 0
 
@@ -397,7 +398,7 @@ class general(Base):
         self.printKeyString("imageindex", self.imageindex, prefix)
         self.printKeyString("orderindex", self.orderindex, prefix)
         self.printKeyString("nameindex", self.nameindex, prefix)
-        self.offset += 1  # 4
+        self.printKeyString("unknown1", self.unknown1, prefix)
         self.printKeyValue("coe_details", self.coe_details, prefix)
         self.printKeyValue("foe_details", self.foe_details, prefix)
         self.printKeyValue("eoe_enabled", self.eoe_enabled, prefix)
@@ -406,7 +407,7 @@ class general(Base):
         self.printKeyValue("sysman_class", self.sysman_class, prefix)
         self.printKeyValue("flags", self.flags, prefix)
         self.printKeyValue("current_ebus", self.current_ebus, prefix)
-        self.offset += 1  # 14
+        self.printKeyValue("unknown2", self.unknown2, prefix)
         self.printKeyValue("phys_port", self.phys_port, prefix)
         self.printKeyValue("physical_address", self.physical_address, prefix)
         print("")
@@ -842,6 +843,8 @@ class dclock(Base):
         self.sync0CycleFactor = self.binVarRead(bindata, 2)  # 16
         self.nameIdx = self.binVarRead(bindata, 1)  # 18
         self.descIdx = self.binVarRead(bindata, 1)  # 19
+        self.unknown1 = bindata[self.offset:self.offset+28]  # 20
+        self.offset += 28
         if self.offset != self.size():
             print("SIZE ERROR:", self, self.offset, self.size())
         return self.offset
@@ -856,10 +859,11 @@ class dclock(Base):
         bindata += self.binVarWrite(self.sync0CycleFactor, 2)  # 16
         bindata += self.binVarWrite(self.nameIdx, 1)  # 18
         bindata += self.binVarWrite(self.descIdx, 1)  # 19
+        bindata += self.unknown1  # 20
         return bindata
 
     def size(self):
-        return 20
+        return 48
 
     def xmlRead(self, base_element):
         pass
@@ -888,6 +892,7 @@ class dclock(Base):
 
 class strings(Base):
     cat_type = 10
+    fill = 0
 
     def binRead(self, bindata):
         self.bindata = bindata
@@ -902,6 +907,7 @@ class strings(Base):
             self.strings.append(text)
             self.offset += strlen
         if self.offset % 2 != 0:
+            self.fill = bindata[-1]
             self.offset += 1
         return self.offset
 
@@ -914,7 +920,7 @@ class strings(Base):
             bindata += self.binVarWrite(strlen, 1)
             bindata += list(text.encode())
         if len(bindata) % 2 != 0:
-            bindata += [0]
+            bindata += [self.fill]
         return bindata
 
     def size(self):
@@ -928,7 +934,7 @@ class strings(Base):
 
     def Info(self, prefix=""):
         self.num_strings = len(self.parent.strings[1:])
-        print(f"{prefix}strins:")
+        print(f"{prefix}strings:")
         print(f"{prefix}   bin:", self.bindata)
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
@@ -1050,7 +1056,6 @@ class Esi(Base):
             bindata += self.binVarWrite(cat_type, 2)
             bindata += self.binVarWrite(cat_size // 2, 2)
             bindata += cat_bindata
-
         bindata += [255, 255]  # fill ???
         return bytes(bindata)
 
