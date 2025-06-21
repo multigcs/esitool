@@ -158,6 +158,8 @@ class preamble(Base):
         self.alias = self.binVarRead(bindata, 2)  # 8
         self.offset += 4  # 10
         self.checksum = self.binVarRead(bindata, 2)  # 14
+        if self.offset != self.size():
+            print("SIZE ERROR:", self, self.offset, self.size())
         return self.offset
 
     def binWrite(self):
@@ -224,6 +226,8 @@ class stdconfig(Base):
         self.offset += 66  # 42
         self.eeprom_size = self.binVarRead(bindata, 2)  # 108
         self.version = self.binVarRead(bindata, 2)  # 110
+        if self.offset != self.size():
+            print("SIZE ERROR:", self, self.offset, self.size())
         return self.offset
 
     def binWrite(self):
@@ -310,17 +314,30 @@ class general(Base):
         self.orderindex = self.binVarRead(bindata, 1)  # 2
         self.nameindex = self.binVarRead(bindata, 1)  # 3
         self.offset += 1  # 4
-        self.coe_enable_sdo = self.binVarRead(bindata, 1)  # 5
-        self.foe_enabled = self.binVarRead(bindata, 1)  # 6
+        # Bit 0: Enable SDO
+        # Bit 1: Enable SDO Info
+        # Bit 2: Enable PDO Assign
+        # Bit 3: Enable PDO Configuration
+        # Bit 4: Enable Upload at startup
+        # Bit 5: Enable SDO complete acces
+        self.coe_details = self.binVarRead(bindata, 1)  # 5
+        self.foe_details = self.binVarRead(bindata, 1)  # 6
         self.eoe_enabled = self.binVarRead(bindata, 1)  # 7
-        self.foe_enabled2 = self.binVarRead(bindata, 1)  # 8
-        self.ds402_channels = self.binVarRead(bindata, 1)  # 9
-        self.sysman_class = self.binVarRead(bindata, 1)  # 10
+        self.soe_channels = self.binVarRead(bindata, 1)  # 8 - reserved
+        self.ds402_channels = self.binVarRead(bindata, 1)  # 9 - reserved
+        self.sysman_class = self.binVarRead(bindata, 1)  # 10 - reserved
+        # Bit 0: Enable SafeOp
+        # Bit 1: Enable notLRW
+        # Bit 2: MboxDataLinkLayer
+        # Bit 3,4: Selection of identification method as defined in Table 22
         self.flags = self.binVarRead(bindata, 1)  # 11
         self.current_ebus = self.binVarRead(bindata, 2)  # 12
         self.offset += 1  # 14
         self.phys_port = self.binVarRead(bindata, 2)  # 15
         self.physical_address = self.binVarRead(bindata, 2)  # 17
+        #self.offset += 13  # 19
+        if self.offset != self.size():
+            print("SIZE ERROR:", self, self.offset, self.size())
         return self.offset
 
     def binWrite(self):
@@ -330,10 +347,10 @@ class general(Base):
         bindata += self.binVarWrite(self.orderindex, 1)  # 2
         bindata += self.binVarWrite(self.nameindex, 1)  # 3
         bindata += [0] * 1  # 4
-        bindata += self.binVarWrite(self.coe_enable_sdo, 1)  # 5
-        bindata += self.binVarWrite(self.foe_enabled, 1)  # 6
+        bindata += self.binVarWrite(self.coe_details, 1)  # 5
+        bindata += self.binVarWrite(self.foe_details, 1)  # 6
         bindata += self.binVarWrite(self.eoe_enabled, 1)  # 7
-        bindata += self.binVarWrite(self.foe_enabled2, 1)  # 8
+        bindata += self.binVarWrite(self.soe_channels, 1)  # 8
         bindata += self.binVarWrite(self.ds402_channels, 1)  # 9
         bindata += self.binVarWrite(self.sysman_class, 1)  # 10
         bindata += self.binVarWrite(self.flags, 1)  # 11
@@ -346,16 +363,17 @@ class general(Base):
 
     def size(self):
         return 19
+        #return 32
 
     def xmlRead(self, base_element):
         self.groupindex = 0
         self.imageindex = 0
         self.orderindex = 0
         self.nameindex = self.stringSet(self.xml_value(base_element, "./Descriptions/Devices/Device/Name")[0])
-        self.coe_enable_sdo = 0
-        self.foe_enabled = 0
+        self.coe_details = 0
+        self.foe_details = 0
         self.eoe_enabled = 0
-        self.foe_enabled2 = 0
+        self.soe_channels = 0
         self.ds402_channels = 0
         self.sysman_class = 0
         self.flags = 0
@@ -380,10 +398,10 @@ class general(Base):
         self.printKeyString("orderindex", self.orderindex, prefix)
         self.printKeyString("nameindex", self.nameindex, prefix)
         self.offset += 1  # 4
-        self.printKeyValue("coe_enable_sdo", self.coe_enable_sdo, prefix)
-        self.printKeyValue("foe_enabled", self.foe_enabled, prefix)
+        self.printKeyValue("coe_details", self.coe_details, prefix)
+        self.printKeyValue("foe_details", self.foe_details, prefix)
         self.printKeyValue("eoe_enabled", self.eoe_enabled, prefix)
-        self.printKeyValue("foe_enabled2", self.foe_enabled2, prefix)
+        self.printKeyValue("soe_channels", self.soe_channels, prefix)
         self.printKeyValue("ds402_channels", self.ds402_channels, prefix)
         self.printKeyValue("sysman_class", self.sysman_class, prefix)
         self.printKeyValue("flags", self.flags, prefix)
@@ -416,7 +434,6 @@ class txpdo(Base):
             entry_num += 1
             if (len(bindata) - self.offset) < entry_size:
                 break
-
         return self.offset
 
     def binWrite(self):
@@ -501,7 +518,6 @@ class rxpdo(Base):
             entry_num += 1
             if (len(bindata) - self.offset) < entry_size:
                 break
-
         return self.offset
 
     def binWrite(self):
@@ -574,6 +590,8 @@ class pdo_entry(Base):
         self.data_type = self.binVarRead(bindata, 1)  # 4
         self.bit_length = self.binVarRead(bindata, 1)  # 5
         self.flags = self.binVarRead(bindata, 2)  # 6
+        if self.offset != self.size():
+            print("SIZE ERROR:", self, self.offset, self.size())
         return self.offset
 
     def binWrite(self):
@@ -638,7 +656,6 @@ class fmmu(Base):
             entry_num += 1
             if (len(bindata) - self.offset) < entry_size:
                 break
-
         return self.offset
 
     def binWrite(self):
@@ -675,6 +692,8 @@ class fmmu_entry(Base):
         self.bindata = bindata
         self.offset = 0
         self.usage = self.binVarRead(bindata, 1)  # 0
+        if self.offset != self.size():
+            print("SIZE ERROR:", self, self.offset, self.size())
         return self.offset
 
     def binWrite(self):
@@ -716,7 +735,6 @@ class syncm(Base):
             entry_num += 1
             if (len(bindata) - self.offset) < entry_size:
                 break
-
         return self.offset
 
     def binWrite(self):
@@ -764,6 +782,8 @@ class syncm_entry(Base):
         self.status = self.binVarRead(bindata, 1)  # 5
         self.enable = self.binVarRead(bindata, 1)  # 6
         self.type = self.binVarRead(bindata, 1)  # 7
+        if self.offset != self.size():
+            print("SIZE ERROR:", self, self.offset, self.size())
         return self.offset
 
     def binWrite(self):
@@ -822,6 +842,8 @@ class dclock(Base):
         self.sync0CycleFactor = self.binVarRead(bindata, 2)  # 16
         self.nameIdx = self.binVarRead(bindata, 1)  # 18
         self.descIdx = self.binVarRead(bindata, 1)  # 19
+        if self.offset != self.size():
+            print("SIZE ERROR:", self, self.offset, self.size())
         return self.offset
 
     def binWrite(self):
@@ -974,7 +996,6 @@ class Esi(Base):
         self.offset = 0
         self.offset += self.preamble.binRead(bindata[0 : 0 + self.preamble.size()])
         self.offset += self.stdconfig.binRead(bindata[self.offset : self.offset + self.stdconfig.size()])
-
         # read catalogs
         cat_num = 0
         self.catalogs = {}
@@ -982,7 +1003,7 @@ class Esi(Base):
             if self.offset + 4 > len(bindata):
                 break
             cat_type = self.binVarRead(bindata, 2)
-            cat_name = categorys.get(cat_type, str(cat_type))
+            cat_name = categorys.get(cat_type)
             cat_size = self.binVarRead(bindata, 2) * 2
             if cat_name in cat_mapping:
                 self.catalogs[cat_num] = cat_mapping[cat_name](self)
@@ -990,9 +1011,10 @@ class Esi(Base):
                 if cat_name == "strings":
                     self.strings = self.catalogs[cat_num].strings
             else:
-                print("#####################")
-                print(cat_num, categorys[cat_type], cat_type, cat_size)
-                print("#####################")
+                print("###############################################################")
+                print("Unknown catalog")
+                print(f" Num:{cat_num}, Name:{cat_name}, Type:{cat_type}, Size:{cat_size}")
+                print("###############################################################")
             self.offset += cat_size
             cat_num += 1
 
