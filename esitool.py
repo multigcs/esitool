@@ -185,8 +185,9 @@ class preamble(Base):
             print("SIZE ERROR:", self, self.offset, self.size())
 
         crc = self.csum(bindata[:14])
-        if crc == self.checksum:
-            print("OK")
+        if crc != self.checksum:
+            self.checksum_ok = True
+            print("CSUM ERROR:", crc, self.checksum)
 
         return self.offset
 
@@ -211,11 +212,13 @@ class preamble(Base):
         self.sync_impulse = 0
         self.pdi_conf2 = 0
         self.alias = 0
+        self.reserved1 = 0
         self.checksum = 0
 
         configDataElement = base_element.find("./Descriptions/Devices/Device/Eeprom/ConfigData")
         if configDataElement is not None:
             configData = bytearray.fromhex(configDataElement.text)
+
             cpos = 0
             if len(configData) >= cpos + 2:
                 self.pdi_ctrl = struct.unpack(f"<H", configData[cpos : cpos + 2])[0]
@@ -249,7 +252,6 @@ class preamble(Base):
         self.printKeyValue("sync_impulse", self.sync_impulse, prefix)
         self.printKeyValue("pdi_conf2", self.pdi_conf2, prefix)
         self.printKeyValue("alias", self.alias, prefix)
-        self.offset += 4  # 10
         self.printKeyValue("checksum", self.checksum, prefix)
         print("")
 
@@ -1121,17 +1123,20 @@ class Esi(Base):
                 if cat_name == "strings":
                     self.strings = self.catalogs[cat_num].strings
             else:
-                print("###############################################################")
-                print("Unknown catalog")
-                print(f" Num:{cat_num}, Name:{cat_name}, Type:{cat_type}, Size:{cat_size}")
-                print(bindata[self.offset : self.offset + cat_size])
-                print(list(bindata[self.offset : self.offset + cat_size]))
-                print("###############################################################")
-                self.catalogs[cat_num] = unknown_cat(self)
-                self.catalogs[cat_num].cat_type = cat_type
-                self.catalogs[cat_num].cat_size = cat_size
-                self.startpos = self.offset
-                self.catalogs[cat_num].binRead(bindata[self.offset : self.offset + cat_size])
+                if cat_type != 65535:  # fill at the end
+                    print("###############################################################")
+                    print("Unknown catalog")
+                    print(f" Num:{cat_num}, Name:{cat_name}, Type:{cat_type}, Size:{cat_size}")
+                    if cat_size < 100:
+                        print(bindata[self.offset : self.offset + cat_size])
+                        print(list(bindata[self.offset : self.offset + cat_size]))
+                    print("###############################################################")
+                    if cat_size < 100:
+                        self.catalogs[cat_num] = unknown_cat(self)
+                        self.catalogs[cat_num].cat_type = cat_type
+                        self.catalogs[cat_num].cat_size = cat_size
+                        self.startpos = self.offset
+                        self.catalogs[cat_num].binRead(bindata[self.offset : self.offset + cat_size])
 
             self.offset += cat_size
             cat_num += 1
