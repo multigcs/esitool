@@ -1,0 +1,975 @@
+#!/usr/bin/env python3
+#
+#
+
+from lxml import etree
+import json
+import sys
+import struct
+
+categorys = {
+    0: "nop",
+    10: "strings",
+    20: "datatypes",
+    30: "general",
+    40: "fmmu",
+    41: "syncm",
+    50: "txpdo",
+    51: "rxpdo",
+    60: "dclock",
+}
+
+datatypes = {
+    0x00: "UNDEF",
+    0x01: "BOOL",
+    0x02: "SINT",
+    0x03: "INT",
+    0x04: "DINT",
+    0x05: "USINT",
+    0x06: "UINT",
+    0x07: "UDINT",
+    0x08: "REAL",
+    0x09: "STRING",
+    0x0A: "OF BYTE",
+    0x0B: "OF UINT",
+    0x10: "INT24",
+    0x11: "LREAL",
+    0x12: "INT40",
+    0x13: "INT48",
+    0x14: "INT56",
+    0x15: "INT64",
+    0x16: "UINT24",
+    0x18: "UINT40",
+    0x19: "UINT48",
+    0x1A: "UINT56",
+    0x1B: "UINT64",
+}
+
+
+class Base:
+    def __init__(self, parent):
+        self.parent = parent
+        self.strings = parent.strings
+        self.bindata = []
+        self.offset = 0
+
+    def binVarRead(self, bindata, size):
+        if size == 2:
+            vtype = "H"
+        elif size == 4:
+            vtype = "I"
+        else:
+            vtype = "B"
+        value = struct.unpack(f"<{vtype}", bindata[self.offset : self.offset + size])[0]
+        self.offset += size
+        return value
+
+    def binVarWrite(self, value, size):
+        if size == 2:
+            vtype = "H"
+        elif size == 4:
+            vtype = "I"
+        else:
+            vtype = "B"
+        bindata = struct.pack(f"<{vtype}", value)
+        self.offset += size
+        return bindata
+
+    def stringSet(self, text):
+        if text not in self.parent.strings:
+            self.parent.strings.append(text)
+        string_index = self.parent.strings.index(text)
+        return string_index
+
+    def datatypeSet(self, datatype):
+        datatype_index = list(datatypes.values()).index(datatype)
+        return datatype_index
+
+    def printKeyDatatype(self, key, value, prefix=""):
+        datatype = datatypes.get(value, "UNSET")
+        print(f"{prefix}   {key:23} {value:6d} ({datatype})")
+
+    def printKeyString(self, key, value, prefix=""):
+        if value < len(self.parent.strings):
+            text = self.parent.strings[value]
+            print(f"{prefix}   {key:23} {value:6d} ('{text}')")
+        else:
+            print(f"{prefix}   {key:23} {value:6d}")
+
+    def printKeyValue(self, key, value, prefix="", fmt=None):
+        if isinstance(value, int):
+            print(f"{prefix}   {key:23} 0x{value:04x} ({value})")
+        else:
+            print(f"{prefix}   {key:23} {value:6s}")
+
+    def xml_value_parse(self, value):
+        if value and value.startswith("#x"):
+            value = int(value.replace("#x", "0x"), 0)
+        return value
+
+    def xml_value(self, base_element, xpath, attribute=None):
+        values = []
+        result = base_element.findall(xpath)
+        if result:
+            for element in result:
+                if attribute:
+                    value = element.get(attribute)
+                    print()
+                else:
+                    value = element.text
+                value = self.xml_value_parse(value)
+                values.append(value)
+        return values or [0]
+
+
+class preamble(Base):
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.pdi_ctrl = self.binVarRead(bindata, 2)  # 0
+        self.pdi_conf = self.binVarRead(bindata, 2)  # 2
+        self.sync_impulse = self.binVarRead(bindata, 2)  # 4
+        self.pdi_conf2 = self.binVarRead(bindata, 2)  # 6
+        self.alias = self.binVarRead(bindata, 2)  # 8
+        self.offset += 4  # 10
+        self.checksum = self.binVarRead(bindata, 2)  # 14
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        bindata += self.binVarWrite(self.pdi_ctrl, 2)  # 0
+        bindata += self.binVarWrite(self.pdi_conf, 2)  # 2
+        bindata += self.binVarWrite(self.sync_impulse, 2)  # 4
+        bindata += self.binVarWrite(self.pdi_conf2, 2)  # 6
+        bindata += self.binVarWrite(self.alias, 2)  # 8
+        bindata += [0] * 4  # 10
+        bindata += self.binVarWrite(self.checksum, 2)  # 14
+        return bindata
+
+    def size(self):
+        return 16
+
+    def xmlRead(self, base_element):
+        self.pdi_ctrl = 0
+        self.pdi_conf = 0
+        self.sync_impulse = 0
+        self.pdi_conf2 = 0
+        self.alias = 0
+        self.checksum = 0
+
+    def Info(self, prefix=""):
+        print(f"{prefix}preamble:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        self.printKeyValue("pdi_ctrl", self.pdi_ctrl, prefix)
+        self.printKeyValue("pdi_conf", self.pdi_conf, prefix)
+        self.printKeyValue("sync_impulse", self.sync_impulse, prefix)
+        self.printKeyValue("pdi_conf2", self.pdi_conf2, prefix)
+        self.printKeyValue("alias", self.alias, prefix)
+        self.offset += 4  # 10
+        self.printKeyValue("checksum", self.checksum, prefix)
+        print("")
+
+
+class stdconfig(Base):
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.vendor_id = self.binVarRead(bindata, 4)  # 0
+        self.product_id = self.binVarRead(bindata, 4)  # 4
+        self.revision_id = self.binVarRead(bindata, 4)  # 8
+        self.serial = self.binVarRead(bindata, 4)  # 12
+        self.offset += 8  # 16
+        self.bs_rec_mbox_offset = self.binVarRead(bindata, 2)  # 24
+        self.bs_rec_mbox_size = self.binVarRead(bindata, 2)  # 26
+        self.bs_snd_mbox_offset = self.binVarRead(bindata, 2)  # 28
+        self.bs_snd_mbox_size = self.binVarRead(bindata, 2)  # 30
+        self.std_rec_mbox_offset = self.binVarRead(bindata, 2)  # 32
+        self.std_rec_mbox_size = self.binVarRead(bindata, 2)  # 34
+        self.std_snd_mbox_offset = self.binVarRead(bindata, 2)  # 36
+        self.std_snd_mbox_size = self.binVarRead(bindata, 2)  # 38
+        self.mailbox_protocol = self.binVarRead(bindata, 2)  # 40
+        self.offset += 66  # 42
+        self.eeprom_size = self.binVarRead(bindata, 2)  # 108
+        self.version = self.binVarRead(bindata, 2)  # 110
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        bindata += self.binVarWrite(self.vendor_id, 4)  # 0
+        bindata += self.binVarWrite(self.product_id, 4)  # 4
+        bindata += self.binVarWrite(self.revision_id, 4)  # 8
+        bindata += self.binVarWrite(self.serial, 4)  # 12
+        bindata += [0] * 8  # 16
+        bindata += self.binVarWrite(self.bs_rec_mbox_offset, 2)  # 24
+        bindata += self.binVarWrite(self.bs_rec_mbox_size, 2)  # 26
+        bindata += self.binVarWrite(self.bs_snd_mbox_offset, 2)  # 28
+        bindata += self.binVarWrite(self.bs_snd_mbox_size, 2)  # 30
+        bindata += self.binVarWrite(self.std_rec_mbox_offset, 2)  # 32
+        bindata += self.binVarWrite(self.std_rec_mbox_size, 2)  # 34
+        bindata += self.binVarWrite(self.std_snd_mbox_offset, 2)  # 36
+        bindata += self.binVarWrite(self.std_snd_mbox_size, 2)  # 38
+        bindata += self.binVarWrite(self.mailbox_protocol, 2)  # 40
+        bindata += [0] * 66  # 42
+        bindata += self.binVarWrite(self.eeprom_size, 2)  # 108
+        bindata += self.binVarWrite(self.version, 2)  # 110
+        return bindata
+
+    def size(self):
+        return 112
+
+    def xmlRead(self, base_element):
+        self.vendor_id = int(self.xml_value(base_element, "./Vendor/Id")[0])
+        self.product_id = int(self.xml_value(base_element, "./Descriptions/Devices/Device/Type", "ProductCode")[0])
+        self.revision_id = int(self.xml_value(base_element, "./Descriptions/Devices/Device/Type", "RevisionNo")[0])
+        self.serial = 0
+        self.bs_rec_mbox_offset = 0
+        self.bs_rec_mbox_size = 0
+        self.bs_snd_mbox_offset = 0
+        self.bs_snd_mbox_size = 0
+        self.std_rec_mbox_offset = 0
+        self.std_rec_mbox_size = 0
+        self.std_snd_mbox_offset = 0
+        self.std_snd_mbox_size = 0
+        self.mailbox_protocol = 0
+        self.eeprom_size = 0
+        self.version = 1
+
+    def Info(self, prefix=""):
+        print(f"{prefix}stdconfig:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        self.printKeyValue("vendor_id", self.vendor_id, prefix)
+        self.printKeyValue("product_id", self.product_id, prefix)
+        self.printKeyValue("revision_id", self.revision_id, prefix)
+        self.printKeyValue("serial", self.serial, prefix)
+        self.printKeyValue("bs_rec_mbox_offset", self.bs_rec_mbox_offset, prefix)
+        self.printKeyValue("bs_rec_mbox_size", self.bs_rec_mbox_size, prefix)
+        self.printKeyValue("bs_snd_mbox_offset", self.bs_snd_mbox_offset, prefix)
+        self.printKeyValue("bs_snd_mbox_size", self.bs_snd_mbox_size, prefix)
+        self.printKeyValue("std_rec_mbox_offset", self.std_rec_mbox_offset, prefix)
+        self.printKeyValue("std_rec_mbox_size", self.std_rec_mbox_size, prefix)
+        self.printKeyValue("std_snd_mbox_offset", self.std_snd_mbox_offset, prefix)
+        self.printKeyValue("std_snd_mbox_size", self.std_snd_mbox_size, prefix)
+        self.printKeyValue("mailbox_protocol", self.mailbox_protocol, prefix)
+        self.printKeyValue("eeprom_size", self.eeprom_size, prefix)
+        self.printKeyValue("version", self.version, prefix)
+        print("")
+
+
+class general(Base):
+    cat_type = 30
+
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.groupindex = self.binVarRead(bindata, 1)  # 0
+        self.imageindex = self.binVarRead(bindata, 1)  # 1
+        self.orderindex = self.binVarRead(bindata, 1)  # 2
+        self.nameindex = self.binVarRead(bindata, 1)  # 3
+        self.offset += 1  # 4
+        self.coe_enable_sdo = self.binVarRead(bindata, 1)  # 5
+        self.foe_enabled = self.binVarRead(bindata, 1)  # 6
+        self.eoe_enabled = self.binVarRead(bindata, 1)  # 7
+        self.foe_enabled2 = self.binVarRead(bindata, 1)  # 8
+        self.ds402_channels = self.binVarRead(bindata, 1)  # 9
+        self.sysman_class = self.binVarRead(bindata, 1)  # 10
+        self.flags = self.binVarRead(bindata, 1)  # 11
+        self.current_ebus = self.binVarRead(bindata, 2)  # 12
+        self.offset += 1  # 14
+        self.phys_port = self.binVarRead(bindata, 2)  # 15
+        self.physical_address = self.binVarRead(bindata, 2)  # 17
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        bindata += self.binVarWrite(self.groupindex, 1)  # 0
+        bindata += self.binVarWrite(self.imageindex, 1)  # 1
+        bindata += self.binVarWrite(self.orderindex, 1)  # 2
+        bindata += self.binVarWrite(self.nameindex, 1)  # 3
+        bindata += [0] * 1  # 4
+        bindata += self.binVarWrite(self.coe_enable_sdo, 1)  # 5
+        bindata += self.binVarWrite(self.foe_enabled, 1)  # 6
+        bindata += self.binVarWrite(self.eoe_enabled, 1)  # 7
+        bindata += self.binVarWrite(self.foe_enabled2, 1)  # 8
+        bindata += self.binVarWrite(self.ds402_channels, 1)  # 9
+        bindata += self.binVarWrite(self.sysman_class, 1)  # 10
+        bindata += self.binVarWrite(self.flags, 1)  # 11
+        bindata += self.binVarWrite(self.current_ebus, 2)  # 12
+        bindata += [0] * 1  # 14
+        bindata += self.binVarWrite(self.phys_port, 2)  # 15
+        bindata += self.binVarWrite(self.physical_address, 2)  # 17
+        bindata += [0] * 13  # 19
+        return bindata
+
+    def size(self):
+        return 19
+
+    def xmlRead(self, base_element):
+        self.groupindex = 0
+        self.imageindex = 0
+        self.orderindex = 0
+        self.nameindex = self.stringSet(self.xml_value(base_element, "./Descriptions/Devices/Device/Name")[0])
+        self.coe_enable_sdo = 0
+        self.foe_enabled = 0
+        self.eoe_enabled = 0
+        self.foe_enabled2 = 0
+        self.ds402_channels = 0
+        self.sysman_class = 0
+        self.flags = 0
+        self.current_ebus = 0
+        self.phys_port = 0
+        self.physical_address = 0
+
+    def Info(self, prefix=""):
+        print(f"{prefix}general:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        self.printKeyString("groupindex", self.groupindex, prefix)
+        self.printKeyString("imageindex", self.imageindex, prefix)
+        self.printKeyString("orderindex", self.orderindex, prefix)
+        self.printKeyString("nameindex", self.nameindex, prefix)
+        self.offset += 1  # 4
+        self.printKeyValue("coe_enable_sdo", self.coe_enable_sdo, prefix)
+        self.printKeyValue("foe_enabled", self.foe_enabled, prefix)
+        self.printKeyValue("eoe_enabled", self.eoe_enabled, prefix)
+        self.printKeyValue("foe_enabled2", self.foe_enabled2, prefix)
+        self.printKeyValue("ds402_channels", self.ds402_channels, prefix)
+        self.printKeyValue("sysman_class", self.sysman_class, prefix)
+        self.printKeyValue("flags", self.flags, prefix)
+        self.printKeyValue("current_ebus", self.current_ebus, prefix)
+        self.offset += 1  # 14
+        self.printKeyValue("phys_port", self.phys_port, prefix)
+        self.printKeyValue("physical_address", self.physical_address, prefix)
+        print("")
+
+
+class txpdo(Base):
+    cat_type = 50
+
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.index = self.binVarRead(bindata, 2)  # 0
+        self.entries = self.binVarRead(bindata, 1)  # 2
+        self.syncmanager = self.binVarRead(bindata, 1)  # 3
+        self.dcsync = self.binVarRead(bindata, 1)  # 4
+        self.name_index = self.binVarRead(bindata, 1)  # 5
+        self.flags = self.binVarRead(bindata, 2)  # 6
+        self.entrys = {}
+        entry_num = 0
+        while True:
+            self.entrys[entry_num] = pdo_entry(self)
+            entry_size = self.entrys[entry_num].size()
+            self.entrys[entry_num].binRead(bindata[self.offset : self.offset + entry_size])
+            self.offset += entry_size
+            entry_num += 1
+            if (len(bindata) - self.offset) < entry_size:
+                break
+
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        bindata += self.binVarWrite(self.index, 2)  # 0
+        bindata += self.binVarWrite(self.entries, 1)  # 2
+        bindata += self.binVarWrite(self.syncmanager, 1)  # 3
+        bindata += self.binVarWrite(self.dcsync, 1)  # 4
+        bindata += self.binVarWrite(self.name_index, 1)  # 5
+        bindata += self.binVarWrite(self.flags, 2)  # 6
+        for num, entry in self.entrys.items():
+            bindata += entry.binWrite()
+        return bindata
+
+    def size(self):
+        return 8
+
+    def xmlRead(self, base_element):
+        # fixed = base_element.get("Fixed")
+        # mandatory = base_element.get("Mandatory")
+        self.index = int(self.xml_value_parse(base_element.find("./Index").text))
+        self.entries = 0
+        self.syncmanager = int(base_element.get("Sm"))
+        self.dcsync = 0
+        self.name_index = self.stringSet(base_element.find("./Name").text)
+        self.flags = 0
+
+        self.entrys = {}
+        entry_num = 0
+        for entry in base_element.findall("./Entry"):
+            self.entrys[entry_num] = pdo_entry(self)
+            self.entrys[entry_num].xmlRead(entry)
+            entry_num += 1
+
+    def Info(self, prefix=""):
+        print(f"{prefix}txpdo:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        self.printKeyValue("index", self.index, prefix)
+        self.printKeyValue("entries", self.entries, prefix)
+        self.printKeyValue("syncmanager", self.syncmanager, prefix)
+        self.printKeyValue("dcsync", self.dcsync, prefix)
+        self.printKeyString("name_index", self.name_index, prefix)
+        self.printKeyValue("flags", self.flags, prefix)
+        for num, entry in self.entrys.items():
+            print(f"{prefix}   {num}:")
+            entry.Info(f"{prefix}   ")
+        print("")
+
+
+class rxpdo(Base):
+    cat_type = 51
+
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.index = self.binVarRead(bindata, 2)  # 0
+        self.entries = self.binVarRead(bindata, 1)  # 2
+        self.syncmanager = self.binVarRead(bindata, 1)  # 3
+        self.dcsync = self.binVarRead(bindata, 1)  # 4
+        self.name_index = self.binVarRead(bindata, 1)  # 5
+        self.flags = self.binVarRead(bindata, 2)  # 6
+        self.entrys = {}
+        entry_num = 0
+        while True:
+            self.entrys[entry_num] = pdo_entry(self)
+            entry_size = self.entrys[entry_num].size()
+            self.entrys[entry_num].binRead(bindata[self.offset : self.offset + entry_size])
+            self.offset += entry_size
+            entry_num += 1
+            if (len(bindata) - self.offset) < entry_size:
+                break
+
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        bindata += self.binVarWrite(self.index, 2)  # 0
+        bindata += self.binVarWrite(self.entries, 1)  # 2
+        bindata += self.binVarWrite(self.syncmanager, 1)  # 3
+        bindata += self.binVarWrite(self.dcsync, 1)  # 4
+        bindata += self.binVarWrite(self.name_index, 1)  # 5
+        bindata += self.binVarWrite(self.flags, 2)  # 6
+        for num, entry in self.entrys.items():
+            bindata += entry.binWrite()
+        return bindata
+
+    def size(self):
+        return 8
+
+    def xmlRead(self, base_element):
+        # fixed = base_element.get("Fixed")
+        # mandatory = base_element.get("Mandatory")
+        self.index = int(self.xml_value_parse(base_element.find("./Index").text))
+        self.entries = 0
+        self.syncmanager = int(base_element.get("Sm"))
+        self.dcsync = 0
+        self.name_index = self.stringSet(base_element.find("./Name").text)
+        self.flags = 0
+
+        self.entrys = {}
+        entry_num = 0
+        for entry in base_element.findall("./Entry"):
+            self.entrys[entry_num] = pdo_entry(self)
+            self.entrys[entry_num].xmlRead(entry)
+            entry_num += 1
+
+    def Info(self, prefix=""):
+        print(f"{prefix}rxpdo:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        self.printKeyValue("index", self.index, prefix)
+        self.printKeyValue("entries", self.entries, prefix)
+        self.printKeyValue("syncmanager", self.syncmanager, prefix)
+        self.printKeyValue("dcsync", self.dcsync, prefix)
+        self.printKeyString("name_index", self.name_index, prefix)
+        self.printKeyValue("flags", self.flags, prefix)
+        for num, entry in self.entrys.items():
+            print(f"{prefix}   {num}:")
+            entry.Info(f"{prefix}   ")
+        print("")
+
+
+class pdo_entry(Base):
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.index = self.binVarRead(bindata, 2)  # 0
+        self.subindex = self.binVarRead(bindata, 1)  # 2
+        self.string_index = self.binVarRead(bindata, 1)  # 3
+        self.data_type = self.binVarRead(bindata, 1)  # 4
+        self.bit_length = self.binVarRead(bindata, 1)  # 5
+        self.flags = self.binVarRead(bindata, 2)  # 6
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        bindata += self.binVarWrite(self.index, 2)  # 0
+        bindata += self.binVarWrite(self.subindex, 1)  # 2
+        bindata += self.binVarWrite(self.string_index, 1)  # 3
+        bindata += self.binVarWrite(self.data_type, 1)  # 4
+        bindata += self.binVarWrite(self.bit_length, 1)  # 5
+        bindata += self.binVarWrite(self.flags, 2)  # 6
+        return bindata
+
+    def size(self):
+        return 8
+
+    def xmlRead(self, base_element):
+        self.index = int(self.xml_value_parse(base_element.find("./Index").text))
+        self.subindex = int(self.xml_value_parse(base_element.find("./SubIndex").text))
+        self.string_index = self.stringSet(base_element.find("./Name").text)
+        self.data_type = self.datatypeSet(base_element.find("./DataType").text)
+        self.bit_length = int(self.xml_value_parse(base_element.find("./BitLen").text))
+        self.flags = 0
+
+    def Info(self, prefix=""):
+        print(f"{prefix}pdo_entry:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        self.printKeyValue("index", self.index, prefix)
+        self.printKeyValue("subindex", self.subindex, prefix)
+        self.printKeyString("string_index", self.string_index, prefix)
+        self.printKeyDatatype("data_type", self.data_type, prefix)
+        self.printKeyValue("bit_length", self.bit_length, prefix)
+        self.printKeyValue("flags", self.flags, prefix)
+        print("")
+
+
+class fmmu(Base):
+    cat_type = 40
+
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.entrys = {}
+        entry_num = 0
+        while True:
+            self.entrys[entry_num] = fmmu_entry(self)
+            entry_size = self.entrys[entry_num].size()
+            self.entrys[entry_num].binRead(bindata[self.offset : self.offset + entry_size])
+            self.offset += entry_size
+            entry_num += 1
+            if (len(bindata) - self.offset) < entry_size:
+                break
+
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        for num, entry in self.entrys.items():
+            bindata += entry.binWrite()
+        return bindata
+
+    def size(self):
+        return 0
+
+    def xmlRead(self, base_element):
+        pass
+
+    def Info(self, prefix=""):
+        print(f"{prefix}fmmu:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        for num, entry in self.entrys.items():
+            print(f"{prefix}   {num}:")
+            entry.Info(f"{prefix}   ")
+        print("")
+
+
+class fmmu_entry(Base):
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.usage = self.binVarRead(bindata, 1)  # 0
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        bindata += self.binVarWrite(self.usage, 1)  # 0
+        return bindata
+
+    def size(self):
+        return 1
+
+    def Info(self, prefix=""):
+        print(f"{prefix}fmmu_entry:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        self.printKeyValue("usage", self.usage, prefix)
+        print("")
+
+
+class syncm(Base):
+    cat_type = 41
+
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.entrys = {}
+        entry_num = 0
+        while True:
+            self.entrys[entry_num] = syncm_entry(self)
+            entry_size = self.entrys[entry_num].size()
+            self.entrys[entry_num].binRead(bindata[self.offset : self.offset + entry_size])
+            self.offset += entry_size
+            entry_num += 1
+            if (len(bindata) - self.offset) < entry_size:
+                break
+
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        for num, entry in self.entrys.items():
+            bindata += entry.binWrite()
+        return bindata
+
+    def size(self):
+        return 0
+
+    def xmlRead(self, base_element):
+        self.entrys = {}
+        entry_num = 0
+        for syncm in base_element.findall("./Descriptions/Devices/Device/Sm"):
+            self.entrys[entry_num] = syncm_entry(self)
+            self.entrys[entry_num].xmlRead(syncm)
+            entry_num += 1
+
+    def Info(self, prefix=""):
+        print(f"{prefix}syncm:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        for num, entry in self.entrys.items():
+            print(f"{prefix}   {num}:")
+            entry.Info(f"{prefix}   ")
+        print("")
+
+
+class syncm_entry(Base):
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.phys_address = self.binVarRead(bindata, 2)  # 0
+        self.lenght = self.binVarRead(bindata, 2)  # 2
+        self.control = self.binVarRead(bindata, 1)  # 4
+        self.status = self.binVarRead(bindata, 1)  # 5
+        self.enable = self.binVarRead(bindata, 1)  # 6
+        self.type = self.binVarRead(bindata, 1)  # 7
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        bindata += self.binVarWrite(self.phys_address, 2)  # 0
+        bindata += self.binVarWrite(self.lenght, 2)  # 2
+        bindata += self.binVarWrite(self.control, 1)  # 4
+        bindata += self.binVarWrite(self.status, 1)  # 5
+        bindata += self.binVarWrite(self.enable, 1)  # 6
+        bindata += self.binVarWrite(self.type, 1)  # 7
+        return bindata
+
+    def size(self):
+        return 8
+
+    def xmlRead(self, base_element):
+        self.phys_address = int(self.xml_value_parse(base_element.get("StartAddress", 0)))
+        self.lenght = int(self.xml_value_parse(base_element.get("DefaultSize", 0)))
+        self.control = int(self.xml_value_parse(base_element.get("ControlByte", 0)))
+        self.status = 0
+        self.enable = int(self.xml_value_parse(base_element.get("Enable", 0)))
+        self.type = 0
+
+    def Info(self, prefix=""):
+        print(f"{prefix}syncm_entry:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        self.printKeyValue("phys_address", self.phys_address, prefix)
+        self.printKeyValue("lenght", self.lenght, prefix)
+        self.printKeyValue("control", self.control, prefix)
+        self.printKeyValue("status", self.status, prefix)
+        self.printKeyValue("enable", self.enable, prefix)
+        self.printKeyValue("type", self.type, prefix)
+        print("")
+
+
+class dclock(Base):
+    cat_type = 60
+
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.offset = 0
+        self.cycleTime0 = self.binVarRead(bindata, 4)  # 0
+        self.shiftTime0 = self.binVarRead(bindata, 4)  # 4
+        self.shiftTime1 = self.binVarRead(bindata, 4)  # 8
+        self.sync1CycleFactor = self.binVarRead(bindata, 2)  # 12
+        self.assignActivate = self.binVarRead(bindata, 2)  # 14
+        self.sync0CycleFactor = self.binVarRead(bindata, 2)  # 16
+        self.nameIdx = self.binVarRead(bindata, 1)  # 18
+        self.descIdx = self.binVarRead(bindata, 1)  # 19
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        bindata += self.binVarWrite(self.cycleTime0, 4)  # 0
+        bindata += self.binVarWrite(self.shiftTime0, 4)  # 4
+        bindata += self.binVarWrite(self.shiftTime1, 4)  # 8
+        bindata += self.binVarWrite(self.sync1CycleFactor, 2)  # 12
+        bindata += self.binVarWrite(self.assignActivate, 2)  # 14
+        bindata += self.binVarWrite(self.sync0CycleFactor, 2)  # 16
+        bindata += self.binVarWrite(self.nameIdx, 1)  # 18
+        bindata += self.binVarWrite(self.descIdx, 1)  # 19
+        return bindata
+
+    def size(self):
+        return 20
+
+    def Info(self, prefix=""):
+        print(f"{prefix}dclock:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        self.printKeyValue("cycleTime0", self.cycleTime0, prefix)
+        self.printKeyValue("shiftTime0", self.shiftTime0, prefix)
+        self.printKeyValue("shiftTime1", self.shiftTime1, prefix)
+        self.printKeyValue("sync1CycleFactor", self.sync1CycleFactor, prefix)
+        self.printKeyValue("assignActivate", self.assignActivate, prefix)
+        self.printKeyValue("sync0CycleFactor", self.sync0CycleFactor, prefix)
+        self.printKeyValue("nameIdx", self.nameIdx, prefix)
+        self.printKeyValue("descIdx", self.descIdx, prefix)
+        print("")
+
+
+class strings(Base):
+    cat_type = 10
+
+    def binRead(self, bindata):
+        self.bindata = bindata
+        self.strings = [""]
+        self.offset = 0
+        self.num_strings = bindata[self.offset]
+        self.offset += 1
+        for strn in range(self.num_strings):
+            strlen = bindata[self.offset]
+            self.offset += 1
+            text = bindata[self.offset : self.offset + strlen].decode()
+            self.strings.append(text)
+            self.offset += strlen
+        if self.offset % 2 != 0:
+            self.offset += 1
+        return self.offset
+
+    def binWrite(self):
+        bindata = []
+        num_strings = len(self.strings[1:])
+        bindata += self.binVarWrite(num_strings, 1)
+        for text in self.strings[1:]:
+            strlen = len(text)
+            bindata += self.binVarWrite(strlen, 1)
+            bindata += list(text.encode())
+        if len(bindata) % 2 != 0:
+            bindata += [0]
+        return bindata
+
+    def size(self):
+        return 20
+
+    def Info(self, prefix=""):
+        print(f"{prefix}strins:")
+        print(f"{prefix}   bin:", self.bindata)
+        if list(self.bindata) != list(self.binWrite()):
+            print(f"{prefix}   bin:", list(self.bindata))
+            print(f"{prefix}   bak:", list(self.binWrite()))
+        else:
+            print(f"{prefix}   bin: RW_OK")
+        self.printKeyValue("Strings", self.num_strings, prefix)
+        for tn, text in enumerate(self.strings):
+            self.printKeyValue(f"{tn}", f"'{text}'", prefix)
+        print("")
+
+
+cat_mapping = {
+    "strings": strings,
+    # "datatypes": datatypes,
+    "general": general,
+    "fmmu": fmmu,
+    "syncm": syncm,
+    "txpdo": txpdo,
+    "rxpdo": rxpdo,
+    "dclock": dclock,
+}
+
+
+class Esi(Base):
+    def __init__(self):
+        self.catalogs = {}
+        self.strings = [""]
+        self.preamble = preamble(self)
+        self.stdconfig = stdconfig(self)
+
+    def xmlRead(self, xmldata):
+        root = etree.fromstring(xmldata)
+
+        self.preamble.xmlRead(root)
+        self.stdconfig.xmlRead(root)
+
+        self.catalogs = {}
+
+        self.catalogs[0] = general(self)
+        self.catalogs[0].xmlRead(root)
+
+        self.catalogs[1] = syncm(self)
+        self.catalogs[1].xmlRead(root)
+
+        for pdo in root.findall(f"./Descriptions/Devices/Device/TxPdo"):
+            self.catalogs[1] = txpdo(self)
+            self.catalogs[1].xmlRead(pdo)
+
+        for pdo in root.findall(f"./Descriptions/Devices/Device/RxPdo"):
+            self.catalogs[1] = rxpdo(self)
+            self.catalogs[1].xmlRead(pdo)
+
+    def binRead(self, bindata):
+        self.offset = 0
+        self.offset += self.preamble.binRead(bindata[0 : 0 + self.preamble.size()])
+        self.offset += self.stdconfig.binRead(bindata[self.offset : self.offset + self.stdconfig.size()])
+
+        # read catalogs
+        cat_num = 0
+        self.catalogs = {}
+        while True:
+            if self.offset + 4 > len(bindata):
+                break
+            cat_type = self.binVarRead(bindata, 2)
+            cat_name = categorys.get(cat_type, str(cat_type))
+            cat_size = self.binVarRead(bindata, 2) * 2
+            if cat_name in cat_mapping:
+                self.catalogs[cat_num] = cat_mapping[cat_name](self)
+                self.catalogs[cat_num].binRead(bindata[self.offset : self.offset + cat_size])
+                if cat_name == "strings":
+                    self.strings = self.catalogs[cat_num].strings
+            else:
+                print("#####################")
+                print(cat_num, categorys[cat_type], cat_type, cat_size)
+                print("#####################")
+            self.offset += cat_size
+            cat_num += 1
+
+    def Info(self, prefix=""):
+        self.preamble.Info(prefix)
+        self.stdconfig.Info(prefix)
+        for cat_num, catalog in self.catalogs.items():
+            catalog.Info(prefix)
+        print("")
+
+    def binWrite(self):
+        bindata = []
+
+        bindata += self.preamble.binWrite()
+        bindata += self.stdconfig.binWrite()
+
+        for cat_num, catalog in self.catalogs.items():
+            cat_bindata = catalog.binWrite()
+            cat_size = len(cat_bindata)
+            cat_type = catalog.cat_type
+            bindata += self.binVarWrite(cat_type, 2)
+            bindata += self.binVarWrite(cat_size // 2, 2)
+            bindata += cat_bindata
+
+        bindata += [255, 255]  # fill ???
+        return bytes(bindata)
+
+
+def readeeprom(filename):
+    data = []
+    if filename.endswith(".bin"):
+        with open(filename, "rb") as f:
+            data = f.read()
+            return data
+    else:
+        with open("sdotest.hex", "r") as f:
+            for line in f.readlines():
+                line = line.strip()
+                if line and line[0] == ":":
+                    byteCount = int(f"0x{line[1:3]}", 0)
+                    Address = int(f"0x{line[3:7]}", 0)
+                    Address = line[3:7]
+                    Typ = line[7:9]
+                    Data = line[9 : 9 + byteCount * 2]
+                    cSum = line[9 + byteCount * 2 : 9 + byteCount * 2 + 2]
+                    for bn in range(byteCount):
+                        byte = line[9 + (bn * 2) : 9 + (bn * 2) + 2]
+                        byte = int(f"0x{byte}", 0)
+                        data.append(byte)
+            data = bytes(data)
+            return data
+    return None
+
+
+filename = sys.argv[1]
+
+esi = Esi()
+
+if filename.endswith(".bin") or filename.endswith(".hex"):
+    bindata = readeeprom(filename)
+    # print(bindata)
+    esi.binRead(bindata)
+    esi.Info()
+
+    bindata_new = esi.binWrite()
+    print(list(bindata))
+    print("")
+    print(list(bindata_new))
+    print("")
+    if list(bindata) == list(bindata_new):
+        print("------- OK -------")
+    for pos in range(len(bindata)):
+        if bindata[pos] != bindata_new[pos]:
+            print(f"{pos} {bindata[pos]:8d} {bindata_new[pos]:8d}")
+
+elif filename.endswith(".xml"):
+    xmldata = open(filename, "r").read()
+    esi.xmlRead(xmldata)
+    esi.Info()
