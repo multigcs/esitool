@@ -29,3 +29,8 @@ Convert .xml into .bin:
 python3 esitool.py -bw tests/single.bin tests/single.xml
 ```
 
+## running tests
+
+```
+make tests
+```
