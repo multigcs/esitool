@@ -29,6 +29,11 @@ Convert .xml into .bin:
 python3 esitool.py -bw tests/single.bin tests/single.xml
 ```
 
+write .bin to eeprom on 1st ethercat device
+```
+ethercat sii_write -p 0 FILE.bin
+```
+
 ## running tests
 
 ```
