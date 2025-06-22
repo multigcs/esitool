@@ -136,6 +136,8 @@ class Base:
         return str(value)
 
     def xml_value_parse(self, value):
+        if isinstance(value, str):
+            value = value.strip()
         if value and value.startswith("#x"):
             value = int(value.replace("#x", "0x"), 0)
         return value
@@ -337,6 +339,20 @@ class stdconfig(Base):
         if eeprom_size:
             self.eeprom_size = self.bytes2ee(eeprom_size)
 
+        bootStrapElement = base_element.find("./Descriptions/Devices/Device/Eeprom/BootStrap")
+        if bootStrapElement is not None:
+            bootStrap = bytearray.fromhex(bootStrapElement.text)
+            print(bootStrap)
+            cpos = 0
+            self.bs_rec_mbox_offset = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[0]
+            cpos += 2
+            self.bs_rec_mbox_size = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[0]
+            cpos += 2
+            self.bs_snd_mbox_offset = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[0]
+            cpos += 2
+            self.bs_snd_mbox_size = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[0]
+            cpos += 2
+
         coe = 0
         eoe = 0
         foe = 0
@@ -480,7 +496,7 @@ class general(Base):
                     details |= int(self.xml_value_parse(element.get("PdoAssign", 0))) << 2
                     details |= int(self.xml_value_parse(element.get("PdoConfig", 0))) << 3
                     details |= int(self.xml_value_parse(element.get("PdoUpload", 0))) << 4
-                    details |= int(self.xml_value_parse(element.get("CompleteAccess", 0))) << 5
+                    #details |= int(self.xml_value_parse(element.get("CompleteAccess", 0))) << 5 # ???
                     if element.tag == "CoE":
                         self.coe_details = details
                     elif element.tag == "FoE":
@@ -1160,12 +1176,22 @@ cat_mapping = {
 
 
 class Esi(Base):
-    def __init__(self):
+    def __init__(self, filename):
         self.offset = 0
         self.catalogs = {}
         self.strings = [""]
         self.preamble = preamble(self)
         self.stdconfig = stdconfig(self)
+
+        if filename.endswith(".bin") or filename.endswith(".hex"):
+            bindata = self.readeeprom(filename)
+            self.binRead(bindata)
+        elif filename.endswith(".xml"):
+            xmldata = open(filename, "rb").read()
+            self.xmlRead(xmldata)
+        else:
+            print(f"UNKNOWN FORMAT: {filename}")
+            
 
     def xmlRead(self, xmldata):
         root = etree.fromstring(xmldata)
@@ -1289,78 +1315,57 @@ class Esi(Base):
         bindata += [255, 255]  # fill ???
         return bytes(bindata)
 
+    def readeeprom(self, filename):
+        data = []
+        if filename.endswith(".bin"):
+            with open(filename, "rb") as f:
+                data = f.read()
+                return data
+        else:
+            with open("sdotest.hex", "r") as f:
+                for line in f.readlines():
+                    line = line.strip()
+                    if line and line[0] == ":":
+                        byteCount = int(f"0x{line[1:3]}", 0)
+                        Address = int(f"0x{line[3:7]}", 0)
+                        Address = line[3:7]
+                        Typ = line[7:9]
+                        Data = line[9 : 9 + byteCount * 2]
+                        cSum = line[9 + byteCount * 2 : 9 + byteCount * 2 + 2]
+                        for bn in range(byteCount):
+                            byte = line[9 + (bn * 2) : 9 + (bn * 2) + 2]
+                            byte = int(f"0x{byte}", 0)
+                            data.append(byte)
+                data = bytes(data)
+                return data
+        return None
 
-def readeeprom(filename):
-    data = []
-    if filename.endswith(".bin"):
-        with open(filename, "rb") as f:
-            data = f.read()
-            return data
-    else:
-        with open("sdotest.hex", "r") as f:
-            for line in f.readlines():
-                line = line.strip()
-                if line and line[0] == ":":
-                    byteCount = int(f"0x{line[1:3]}", 0)
-                    Address = int(f"0x{line[3:7]}", 0)
-                    Address = line[3:7]
-                    Typ = line[7:9]
-                    Data = line[9 : 9 + byteCount * 2]
-                    cSum = line[9 + byteCount * 2 : 9 + byteCount * 2 + 2]
-                    for bn in range(byteCount):
-                        byte = line[9 + (bn * 2) : 9 + (bn * 2) + 2]
-                        byte = int(f"0x{byte}", 0)
-                        data.append(byte)
-            data = bytes(data)
-            return data
-    return None
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--info", "-i", help="show info", default=False, action="store_true")
+    parser.add_argument("--xml", "-x", help="print xml", default=False, action="store_true")
+    parser.add_argument("--bin", "-b", help="print eeprom data", default=False, action="store_true")
+    parser.add_argument("--comp", "-c", help="compare bin", default=False, action="store_true")
+    parser.add_argument("--binwrite", "-bw", help="write eeprom", type=str)
+    parser.add_argument("filename", help="input filename .xml|.bin|.hex", nargs="?", type=str, default="")
+    args = parser.parse_args()
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--info", "-i", help="show info", default=False, action="store_true")
-parser.add_argument("--xml", "-x", help="export xml", default=False, action="store_true")
-parser.add_argument("--bin", "-b", help="export eeprom", default=False, action="store_true")
-parser.add_argument("--comp", "-c", help="compare bin", default=False, action="store_true")
+    esi = Esi(args.filename)
 
-parser.add_argument("--binwrite", "-bw", help="write eeprom", type=str)
+    if args.info:
+        esi.Info()
 
-parser.add_argument("filename", help="input filename .xml|.bin|.hex", nargs="?", type=str, default="")
-args = parser.parse_args()
+    if args.xml:
+        res = esi.xmlWrite()
+        print(res)
 
-esi = Esi()
+    if args.bin:
+        res = esi.binWrite()
+        print(res)
 
-if args.filename.endswith(".bin") or args.filename.endswith(".hex"):
-    bindata = readeeprom(args.filename)
-    esi.binRead(bindata)
+    if args.binwrite:
+        res = esi.binWrite()
+        print(f"writing binary data to '{args.binwrite}'")
+        open(args.binwrite, "wb").write(res)
 
-    if args.comp:
-        bindata_new = esi.binWrite()
-        print(list(bindata))
-        print("")
-        print(list(bindata_new))
-        print("")
-        if list(bindata) == list(bindata_new):
-            print("------- OK -------")
-        for pos in range(len(bindata)):
-            if bindata[pos] != bindata_new[pos]:
-                print(f"{pos} {bindata[pos]:8d} {bindata_new[pos]:8d}")
-
-elif args.filename.endswith(".xml"):
-    xmldata = open(args.filename, "rb").read()
-    esi.xmlRead(xmldata)
-
-if args.info:
-    esi.Info()
-
-if args.xml:
-    res = esi.xmlWrite()
-    print(res)
-
-if args.bin:
-    res = esi.binWrite()
-    print(res)
-
-if args.binwrite:
-    res = esi.binWrite()
-    print(f"writing binary data to '{args.binwrite}'")
-    open(args.binwrite, "wb").write(res)
