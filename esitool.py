@@ -7,6 +7,13 @@ from lxml import etree
 import json
 import sys
 import struct
+import os
+
+try:
+    import dialog
+except Exception:
+    dialog = None
+
 
 categorys = {
     0: "nop",
@@ -1475,20 +1482,26 @@ class Esi(Base):
 
         if self.deviceids:
             print(f"{prefix}DeviceId's:")
-            for deviceid in sorted(self.deviceids):
-                self.printKeyValue("DeviceId", f"{deviceid}", prefix + "   ")
+            for deviceid, name in enumerate(self.deviceids, 1):
+                if str(self.deviceid) == str(deviceid):
+                    self.printKeyValue("DeviceId", f"{deviceid} ({name}) *", prefix)
+                else:
+                    self.printKeyValue("DeviceId", f"{deviceid} ({name})", prefix)
         print("")
 
         if self.lcids:
             print(f"{prefix}Locale Identifiers (LcId's):")
             for lcid in sorted(self.lcids):
-                self.printKeyValue("LcId", f"{lcid} ({lcidinfo.get(lcid, '')})", prefix + "   ")
+                if self.lcid == lcid:
+                    self.printKeyValue("LcId", f"{lcid} ({lcidinfo.get(lcid, '')}) *", prefix)
+                else:
+                    self.printKeyValue("LcId", f"{lcid} ({lcidinfo.get(lcid, '')})", prefix)
         print("")
 
         if self.images:
             print(f"{prefix}Images:")
             for name in sorted(self.images):
-                self.printKeyValue("Image", f"{name}", prefix + "   ")
+                self.printKeyValue("Image", f"{name}", prefix)
         print("")
 
     def binWrite(self):
@@ -1546,7 +1559,7 @@ if __name__ == "__main__":
     parser.add_argument("--bin", "-b", help="print eeprom data", default=False, action="store_true")
     parser.add_argument("--comp", "-c", help="compare bin", default=False, action="store_true")
     parser.add_argument("--lcid", "-l", help="Location ID", type=str)
-    parser.add_argument("--deviceid", "-d", help="Device ID", default="1", type=str)
+    parser.add_argument("--deviceid", "-d", help="Device ID", type=str)
     parser.add_argument("--imgwrite", "-iw", help="write image", type=str)
     parser.add_argument("--binwrite", "-bw", help="write eeprom", type=str)
     parser.add_argument(
@@ -1557,6 +1570,29 @@ if __name__ == "__main__":
         default="",
     )
     args = parser.parse_args()
+
+    if dialog is not None:
+        esi = Esi(args.filename)
+
+        if args.deviceid is None and esi.deviceids:
+            d = dialog.Dialog()
+            menuentries = []
+            for deviceid, name in enumerate(esi.deviceids, 1):
+                menuentries.append((str(deviceid), name))
+            code, tag = d.menu("Select an Device:", choices=menuentries)
+            if code != "ok":
+                exit(0)
+            args.deviceid = tag
+
+        if args.lcid is None and esi.lcids:
+            d = dialog.Dialog()
+            menuentries = []
+            for lcid in sorted(esi.lcids):
+                menuentries.append((lcid, f"{lcid} ({lcidinfo.get(lcid, '')})"))
+            code, tag = d.menu("Select an Location-Identifier:", choices=menuentries)
+            if code != "ok":
+                exit(0)
+            args.lcid = tag
 
     esi = Esi(args.filename, lcid=args.lcid, deviceid=args.deviceid, debug=args.debug)
 
