@@ -81,6 +81,7 @@ class Base:
         self.images = parent.images
         self.deviceid = parent.deviceid
         self.deviceids = parent.deviceids
+        self.debug = parent.debug
         self.bindata = []
         self.offset = 0
         self.startpos = 0
@@ -119,11 +120,7 @@ class Base:
 
     def datatypeSet(self, datatype):
         dlist = list(datatypes.values())
-        datatype = (
-            datatype.replace("UINT16", "UINT")
-            .replace("UINT8", "UINT")
-            .replace("UINT32", "UINT")
-        )
+        datatype = datatype.replace("UINT16", "UINT").replace("UINT8", "UINT").replace("UINT32", "UINT")
         if datatype in dlist:
             datatype_index = dlist.index(datatype)
             return datatype_index
@@ -263,9 +260,7 @@ class preamble(Base):
         self.reserved1 = 0
         self.checksum = 0
 
-        configDataElement = base_element.find(
-            f"./Descriptions/Devices/Device[{self.deviceid}]/Eeprom/ConfigData"
-        )
+        configDataElement = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]/Eeprom/ConfigData")
         if configDataElement is not None:
             configData = bytearray.fromhex(configDataElement.text)
             cpos = 0
@@ -290,12 +285,11 @@ class preamble(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}preamble: {self.startpos}")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         self.printKeyValue("pdi_ctrl", self.pdi_ctrl, prefix)
         self.printKeyValue("pdi_conf", self.pdi_conf, prefix)
         self.printKeyValue("sync_impulse", self.sync_impulse, prefix)
@@ -384,24 +378,14 @@ class stdconfig(Base):
         self.eeprom_size = 0
         self.version = 1
 
-        for sm in base_element.findall(
-            f"./Descriptions/Devices/Device[{self.deviceid}]/Sm"
-        ):
+        for sm in base_element.findall(f"./Descriptions/Devices/Device[{self.deviceid}]/Sm"):
             name = sm.text
             if name == "MBoxOut":
-                self.std_rec_mbox_size = int(
-                    self.xml_value_parse(sm.get("DefaultSize", 0))
-                )
-                self.std_rec_mbox_offset = int(
-                    self.xml_value_parse(sm.get("StartAddress", 0))
-                )
+                self.std_rec_mbox_size = int(self.xml_value_parse(sm.get("DefaultSize", 0)))
+                self.std_rec_mbox_offset = int(self.xml_value_parse(sm.get("StartAddress", 0)))
             if name == "MBoxIn":
-                self.std_snd_mbox_size = int(
-                    self.xml_value_parse(sm.get("DefaultSize", 0))
-                )
-                self.std_snd_mbox_offset = int(
-                    self.xml_value_parse(sm.get("StartAddress", 0))
-                )
+                self.std_snd_mbox_size = int(self.xml_value_parse(sm.get("DefaultSize", 0)))
+                self.std_snd_mbox_offset = int(self.xml_value_parse(sm.get("StartAddress", 0)))
 
         eeprom_size = int(
             self.xml_value(
@@ -412,21 +396,15 @@ class stdconfig(Base):
         if eeprom_size:
             self.eeprom_size = self.bytes2ee(eeprom_size)
 
-        bootStrapElement = base_element.find(
-            f"./Descriptions/Devices/Device[{self.deviceid}]/Eeprom/BootStrap"
-        )
+        bootStrapElement = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]/Eeprom/BootStrap")
         if bootStrapElement is not None:
             bootStrap = bytearray.fromhex(bootStrapElement.text)
             cpos = 0
-            self.bs_rec_mbox_offset = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[
-                0
-            ]
+            self.bs_rec_mbox_offset = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[0]
             cpos += 2
             self.bs_rec_mbox_size = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[0]
             cpos += 2
-            self.bs_snd_mbox_offset = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[
-                0
-            ]
+            self.bs_snd_mbox_offset = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[0]
             cpos += 2
             self.bs_snd_mbox_size = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[0]
             cpos += 2
@@ -435,9 +413,7 @@ class stdconfig(Base):
         eoe = 0
         foe = 0
         voe = 0
-        for mb in base_element.findall(
-            f"./Descriptions/Devices/Device[{self.deviceid}]/Mailbox"
-        ):
+        for mb in base_element.findall(f"./Descriptions/Devices/Device[{self.deviceid}]/Mailbox"):
             for element in mb:
                 if element.tag == "CoE":
                     coe = 0x0004
@@ -460,12 +436,11 @@ class stdconfig(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}stdconfig: {self.startpos}")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         self.printKeyValue("vendor_id", self.vendor_id, prefix)
         self.printKeyValue("product_id", self.product_id, prefix)
         self.printKeyValue("revision_id", self.revision_id, prefix)
@@ -549,11 +524,7 @@ class general(Base):
         return 32
 
     def xmlRead(self, base_element):
-        self.groupindex = self.stringSet(
-            self.xml_value(
-                base_element, "./Descriptions/Groups/Group/Type", default=""
-            )[0]
-        )
+        self.groupindex = self.stringSet(self.xml_value(base_element, "./Descriptions/Groups/Group/Type", default="")[0])
         self.imageindex = 0
         # self.orderindex = self.stringSet(self.xml_value(base_element, f"./Descriptions/Devices/Device[{self.deviceid}]/Type", default="")[0])
         self.orderindex = 0
@@ -578,9 +549,7 @@ class general(Base):
         self.phys_port23 = 0
         self.physical_address = 0
 
-        for mb in base_element.findall(
-            f"./Descriptions/Devices/Device[{self.deviceid}]/Mailbox"
-        ):
+        for mb in base_element.findall(f"./Descriptions/Devices/Device[{self.deviceid}]/Mailbox"):
             for element in mb:
                 if element.tag == "EoE":
                     self.eoe_enabled = 1
@@ -589,15 +558,9 @@ class general(Base):
                 elif element.tag == "CoE":
                     details = 1
                     details |= int(self.xml_value_parse(element.get("SdoInfo", 0))) << 1
-                    details |= (
-                        int(self.xml_value_parse(element.get("PdoAssign", 0))) << 2
-                    )
-                    details |= (
-                        int(self.xml_value_parse(element.get("PdoConfig", 0))) << 3
-                    )
-                    details |= (
-                        int(self.xml_value_parse(element.get("PdoUpload", 0))) << 4
-                    )
+                    details |= int(self.xml_value_parse(element.get("PdoAssign", 0))) << 2
+                    details |= int(self.xml_value_parse(element.get("PdoConfig", 0))) << 3
+                    details |= int(self.xml_value_parse(element.get("PdoUpload", 0))) << 4
                     # details |= int(self.xml_value_parse(element.get("CompleteAccess", 0))) << 5
                     self.coe_details = details
 
@@ -623,13 +586,11 @@ class general(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}general: {self.startpos}")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
-
         self.printKeyString("nameindex", self.nameindex, prefix)
         self.printKeyString("groupindex", self.groupindex, prefix)
         self.printKeyString("imageindex", self.imageindex, prefix)
@@ -645,12 +606,8 @@ class general(Base):
     Enable SDO complete access: .. no
         """
         print(f"{prefix}   coe_details:")
-        self.printKeyValue(
-            "  Enable SDO", (self.coe_details & (1 << 0)) and "yes" or "no", prefix
-        )
-        self.printKeyValue(
-            "  Enable SDO Info", (self.coe_details & (1 << 1)) and "yes" or "no", prefix
-        )
+        self.printKeyValue("  Enable SDO", (self.coe_details & (1 << 0)) and "yes" or "no", prefix)
+        self.printKeyValue("  Enable SDO Info", (self.coe_details & (1 << 1)) and "yes" or "no", prefix)
         self.printKeyValue(
             "  Enable PDO Assign",
             (self.coe_details & (1 << 2)) and "yes" or "no",
@@ -672,12 +629,8 @@ class general(Base):
             prefix,
         )
 
-        self.printKeyValue(
-            "foe_details", self.foe_details and "enabled" or "not enabled", prefix
-        )
-        self.printKeyValue(
-            "eoe_enabled", self.eoe_enabled and "enabled" or "not enabled", prefix
-        )
+        self.printKeyValue("foe_details", self.foe_details and "enabled" or "not enabled", prefix)
+        self.printKeyValue("eoe_enabled", self.eoe_enabled and "enabled" or "not enabled", prefix)
         print("")
 
         # self.printKeyValue("soe_channels", self.soe_channels, prefix)
@@ -744,9 +697,7 @@ class txpdo(Base):
         while True:
             self.entrys[entry_num] = pdo_entry(self)
             entry_size = self.entrys[entry_num].size()
-            self.entrys[entry_num].binRead(
-                bindata[self.offset : self.offset + entry_size]
-            )
+            self.entrys[entry_num].binRead(bindata[self.offset : self.offset + entry_size])
             self.offset += entry_size
             entry_num += 1
             if (len(bindata) - self.offset) < entry_size:
@@ -777,9 +728,7 @@ class txpdo(Base):
         self.flags = int(base_element.get("Mandatory", 0) in {"true", "1"})
         self.flags |= int(base_element.get("Fixed", 0) in {"true", "1"}) << 4
         self.flags |= int(base_element.get("Virtual", 0) in {"true", "1"}) << 5
-        self.flags |= (
-            int(base_element.get("OverwrittenByModule", 0) in {"true", "1"}) << 7
-        )
+        self.flags |= int(base_element.get("OverwrittenByModule", 0) in {"true", "1"}) << 7
         self.entrys = {}
         for entry in base_element.findall("./Entry"):
             self.entrys[self.entries] = pdo_entry(self)
@@ -802,12 +751,11 @@ class txpdo(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}txpdo: {self.startpos}")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         self.printKeyValue("index", self.index, prefix)
         self.printKeyValue("entries", self.entries, prefix)
         self.printKeyValue("syncmanager", self.syncmanager, prefix)
@@ -838,9 +786,7 @@ class rxpdo(Base):
         while True:
             self.entrys[entry_num] = pdo_entry(self)
             entry_size = self.entrys[entry_num].size()
-            self.entrys[entry_num].binRead(
-                bindata[self.offset : self.offset + entry_size]
-            )
+            self.entrys[entry_num].binRead(bindata[self.offset : self.offset + entry_size])
             self.offset += entry_size
             entry_num += 1
             if (len(bindata) - self.offset) < entry_size:
@@ -871,9 +817,7 @@ class rxpdo(Base):
         self.flags = int(base_element.get("Mandatory", 0) in {"true", "1"})
         self.flags |= int(base_element.get("Fixed", 0) in {"true", "1"}) << 4
         self.flags |= int(base_element.get("Virtual", 0) in {"true", "1"}) << 5
-        self.flags |= (
-            int(base_element.get("OverwrittenByModule", 0) in {"true", "1"}) << 7
-        )
+        self.flags |= int(base_element.get("OverwrittenByModule", 0) in {"true", "1"}) << 7
         self.entrys = {}
         for entry in base_element.findall("./Entry"):
             self.entrys[self.entries] = pdo_entry(self)
@@ -896,12 +840,11 @@ class rxpdo(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}rxpdo: {self.startpos}")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         self.printKeyValue("index", self.index, prefix)
         self.printKeyValue("entries", self.entries, prefix)
         self.printKeyValue("syncmanager", self.syncmanager, prefix)
@@ -945,12 +888,8 @@ class pdo_entry(Base):
     def xmlRead(self, base_element):
         self.index = int(self.xml_value(base_element, "./Index")[0])
         self.subindex = int(self.xml_value(base_element, "./SubIndex")[0])
-        self.string_index = self.stringSet(
-            self.xml_value(base_element, "./Name", default="")[0]
-        )
-        self.data_type = self.datatypeSet(
-            self.xml_value(base_element, "./DataType", default="")[0]
-        )
+        self.string_index = self.stringSet(self.xml_value(base_element, "./Name", default="")[0])
+        self.data_type = self.datatypeSet(self.xml_value(base_element, "./DataType", default="")[0])
         self.bit_length = int(self.xml_value(base_element, "./BitLen")[0])
         self.flags = 0
 
@@ -960,18 +899,15 @@ class pdo_entry(Base):
         etree.SubElement(Entry, "SubIndex").text = str(self.subindex)
         etree.SubElement(Entry, "BitLen").text = str(self.bit_length)
         etree.SubElement(Entry, "Name").text = self.value2xmlText(self.string_index)
-        etree.SubElement(Entry, "DataType").text = self.value2xmlDatatype(
-            self.data_type
-        )
+        etree.SubElement(Entry, "DataType").text = self.value2xmlDatatype(self.data_type)
 
     def Info(self, prefix=""):
         print(f"{prefix}pdo_entry:")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         self.printKeyValue("index", self.index, prefix)
         self.printKeyValue("subindex", self.subindex, prefix)
         self.printKeyString("string_index", self.string_index, prefix)
@@ -995,9 +931,7 @@ class fmmu(Base):
         while True:
             self.entrys[entry_num] = fmmu_entry(self)
             entry_size = self.entrys[entry_num].size()
-            self.entrys[entry_num].binRead(
-                bindata[self.offset : self.offset + entry_size]
-            )
+            self.entrys[entry_num].binRead(bindata[self.offset : self.offset + entry_size])
             self.offset += entry_size
             entry_num += 1
             if (len(bindata) - self.offset) < entry_size:
@@ -1022,9 +956,7 @@ class fmmu(Base):
         self.entrys = {}
         entry_num = 0
         min_entries = 0
-        for fmmu in base_element.findall(
-            f"./Descriptions/Devices/Device[{self.deviceid}]/Fmmu"
-        ):
+        for fmmu in base_element.findall(f"./Descriptions/Devices/Device[{self.deviceid}]/Fmmu"):
             self.entrys[entry_num] = fmmu_entry(self)
             self.entrys[entry_num].xmlRead(fmmu)
             entry_num += 1
@@ -1034,12 +966,11 @@ class fmmu(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}fmmu: {self.startpos}")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         for num, entry in self.entrys.items():
             print(f"{prefix}   {num}:")
             entry.Info(f"{prefix}   ")
@@ -1080,12 +1011,11 @@ class fmmu_entry(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}fmmu_entry:")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         self.printKeyValue("usage", self.usage, prefix)
         print("")
 
@@ -1104,9 +1034,7 @@ class syncm(Base):
         while True:
             self.entrys[entry_num] = syncm_entry(self)
             entry_size = self.entrys[entry_num].size()
-            self.entrys[entry_num].binRead(
-                bindata[self.offset : self.offset + entry_size]
-            )
+            self.entrys[entry_num].binRead(bindata[self.offset : self.offset + entry_size])
             self.offset += entry_size
             entry_num += 1
             if (len(bindata) - self.offset) < entry_size:
@@ -1125,9 +1053,7 @@ class syncm(Base):
     def xmlRead(self, base_element):
         self.entrys = {}
         entry_num = 0
-        for syncm in base_element.findall(
-            f"./Descriptions/Devices/Device[{self.deviceid}]/Sm"
-        ):
+        for syncm in base_element.findall(f"./Descriptions/Devices/Device[{self.deviceid}]/Sm"):
             self.entrys[entry_num] = syncm_entry(self)
             self.entrys[entry_num].xmlRead(syncm)
             entry_num += 1
@@ -1138,12 +1064,11 @@ class syncm(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}syncm: {self.startpos}")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         for num, entry in self.entrys.items():
             print(f"{prefix}   {num}:")
             entry.Info(f"{prefix}   ")
@@ -1179,9 +1104,7 @@ class syncm_entry(Base):
         return 8
 
     def xmlRead(self, base_element):
-        self.phys_address = int(
-            self.xml_value_parse(base_element.get("StartAddress", 0))
-        )
+        self.phys_address = int(self.xml_value_parse(base_element.get("StartAddress", 0)))
         self.lenght = int(self.xml_value_parse(base_element.get("DefaultSize", 0)))
         self.control = int(self.xml_value_parse(base_element.get("ControlByte", 0)))
         self.status = 0
@@ -1209,12 +1132,11 @@ class syncm_entry(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}syncm_entry:")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         self.printKeyValue("phys_address", self.phys_address, prefix)
         self.printKeyValue("lenght", self.lenght, prefix)
         self.printKeyValue("control", self.control, prefix)
@@ -1264,12 +1186,8 @@ class dclock(Base):
         return 20 + self.fill_n
 
     def xmlRead(self, base_element):
-        self.nameIdx = self.stringSet(
-            self.xml_value(base_element, "./Name", default="")[0]
-        )
-        self.descIdx = self.stringSet(
-            self.xml_value(base_element, "./Desc", default="")[0]
-        )
+        self.nameIdx = self.stringSet(self.xml_value(base_element, "./Name", default="")[0])
+        self.descIdx = self.stringSet(self.xml_value(base_element, "./Desc", default="")[0])
         # self.assignActivate = int(self.xml_value(base_element, "./AssignActivate")[0])
         self.assignActivate = 0
         self.cycleTime0 = int(self.xml_value(base_element, "./CycleTimeSync0")[0])
@@ -1285,12 +1203,11 @@ class dclock(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}dclock: {self.startpos}")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         self.printKeyValue("cycleTime0", self.cycleTime0, prefix)
         self.printKeyValue("shiftTime0", self.shiftTime0, prefix)
         self.printKeyValue("shiftTime1", self.shiftTime1, prefix)
@@ -1349,12 +1266,11 @@ class strings(Base):
     def Info(self, prefix=""):
         self.num_strings = len(self.parent.strings[1:])
         print(f"{prefix}strings: {self.startpos}")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
         self.printKeyValue("Strings", self.num_strings, prefix)
         for tn, text in enumerate(self.strings):
             self.printKeyValue(f"{tn}", f"'{text}'", prefix)
@@ -1384,13 +1300,11 @@ class unknown_cat(Base):
 
     def Info(self, prefix=""):
         print(f"{prefix}UNKNOWN CATALOG: {self.startpos}")
-        print(f"{prefix}   bin:", list(self.bindata))
+        if self.debug > 0:
+            print(f"{prefix}   bin:", list(self.bindata))
         if list(self.bindata) != list(self.binWrite()):
             print(f"{prefix}   bin:", list(self.bindata))
             print(f"{prefix}   bak:", list(self.binWrite()))
-        else:
-            print(f"{prefix}   bin: RW_OK")
-
         self.printKeyValue("Type-Id", self.cat_type, prefix)
         self.printKeyValue("Cat-Size", self.cat_size, prefix)
         print("")
@@ -1409,13 +1323,14 @@ cat_mapping = {
 
 
 class Esi(Base):
-    def __init__(self, filename, lcid=None, deviceid=None):
+    def __init__(self, filename, lcid=None, deviceid=None, debug=0):
         self.lcid = lcid
         self.lcids = []
         if deviceid is None:
             deviceid = "1"
         self.deviceid = deviceid
         self.deviceids = []
+        self.debug = debug
         self.images = {}
         self.offset = 0
         self.catalogs = {}
@@ -1463,23 +1378,17 @@ class Esi(Base):
         self.catalogs[cat_num].xmlRead(root)
         cat_num += 1
 
-        for pdo in root.findall(
-            f"./Descriptions/Devices/Device[{self.deviceid}]/RxPdo"
-        ):
+        for pdo in root.findall(f"./Descriptions/Devices/Device[{self.deviceid}]/RxPdo"):
             self.catalogs[cat_num] = rxpdo(self)
             self.catalogs[cat_num].xmlRead(pdo)
             cat_num += 1
 
-        for pdo in root.findall(
-            f"./Descriptions/Devices/Device[{self.deviceid}]/TxPdo"
-        ):
+        for pdo in root.findall(f"./Descriptions/Devices/Device[{self.deviceid}]/TxPdo"):
             self.catalogs[cat_num] = txpdo(self)
             self.catalogs[cat_num].xmlRead(pdo)
             cat_num += 1
 
-        for opMode in root.findall(
-            f"./Descriptions/Devices/Device[{self.deviceid}]/Dc/OpMode"
-        ):
+        for opMode in root.findall(f"./Descriptions/Devices/Device[{self.deviceid}]/Dc/OpMode"):
             self.catalogs[cat_num] = dclock(self)
             self.catalogs[cat_num].xmlRead(opMode)
             cat_num += 1
@@ -1490,9 +1399,7 @@ class Esi(Base):
                 continue
             if element.tag.startswith("ImageData"):
                 imageData = bytearray.fromhex(element.text)
-                self.images[f"Vendor/{element.tag.replace('ImageData', '')}"] = (
-                    imageData
-                )
+                self.images[f"Vendor/{element.tag.replace('ImageData', '')}"] = imageData
                 open("/tmp/test.img", "wb").write(imageData)
 
         elements = root.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
@@ -1501,9 +1408,7 @@ class Esi(Base):
                 continue
             if element.tag.startswith("ImageData"):
                 imageData = bytearray.fromhex(element.text)
-                self.images[f"Device/{element.tag.replace('ImageData', '')}"] = (
-                    imageData
-                )
+                self.images[f"Device/{element.tag.replace('ImageData', '')}"] = imageData
                 open("/tmp/test.img", "wb").write(imageData)
 
     def binRead(self, bindata):
@@ -1511,9 +1416,7 @@ class Esi(Base):
         self.offset = 0
         self.offset += self.preamble.binRead(bindata[0 : 0 + self.preamble.size()])
         self.startpos = self.offset
-        self.offset += self.stdconfig.binRead(
-            bindata[self.offset : self.offset + self.stdconfig.size()]
-        )
+        self.offset += self.stdconfig.binRead(bindata[self.offset : self.offset + self.stdconfig.size()])
         # read catalogs
         cat_num = 0
         self.catalogs = {}
@@ -1527,34 +1430,24 @@ class Esi(Base):
             if cat_name in cat_mapping:
                 self.catalogs[cat_num] = cat_mapping[cat_name](self)
                 self.startpos = self.offset
-                self.catalogs[cat_num].binRead(
-                    bindata[self.offset : self.offset + cat_size]
-                )
+                self.catalogs[cat_num].binRead(bindata[self.offset : self.offset + cat_size])
                 if cat_name == "strings":
                     self.strings = self.catalogs[cat_num].strings
             else:
                 if cat_type != 65535:  # fill at the end
-                    print(
-                        "###############################################################"
-                    )
+                    print("###############################################################")
                     print("Unknown catalog")
-                    print(
-                        f" Num:{cat_num}, Name:{cat_name}, Type:{cat_type}, Size:{cat_size}"
-                    )
+                    print(f" Num:{cat_num}, Name:{cat_name}, Type:{cat_type}, Size:{cat_size}")
                     if cat_size < 100:
                         print(bindata[self.offset : self.offset + cat_size])
                         print(list(bindata[self.offset : self.offset + cat_size]))
-                    print(
-                        "###############################################################"
-                    )
+                    print("###############################################################")
                     if cat_size < 100:
                         self.catalogs[cat_num] = unknown_cat(self)
                         self.catalogs[cat_num].cat_type = cat_type
                         self.catalogs[cat_num].cat_size = cat_size
                         self.startpos = self.offset
-                        self.catalogs[cat_num].binRead(
-                            bindata[self.offset : self.offset + cat_size]
-                        )
+                        self.catalogs[cat_num].binRead(bindata[self.offset : self.offset + cat_size])
 
             self.offset += cat_size
             cat_num += 1
@@ -1589,9 +1482,7 @@ class Esi(Base):
         if self.lcids:
             print(f"{prefix}Locale Identifiers (LcId's):")
             for lcid in sorted(self.lcids):
-                self.printKeyValue(
-                    "LcId", f"{lcid} ({lcidinfo.get(lcid, '')})", prefix + "   "
-                )
+                self.printKeyValue("LcId", f"{lcid} ({lcidinfo.get(lcid, '')})", prefix + "   ")
         print("")
 
         if self.images:
@@ -1649,18 +1540,11 @@ class Esi(Base):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--info", "-i", help="show info", default=False, action="store_true"
-    )
-    parser.add_argument(
-        "--xml", "-x", help="print xml", default=False, action="store_true"
-    )
-    parser.add_argument(
-        "--bin", "-b", help="print eeprom data", default=False, action="store_true"
-    )
-    parser.add_argument(
-        "--comp", "-c", help="compare bin", default=False, action="store_true"
-    )
+    parser.add_argument("--debug", "-D", help="show debug infos", default=False, action="store_true")
+    parser.add_argument("--info", "-i", help="show info", default=False, action="store_true")
+    parser.add_argument("--xml", "-x", help="print xml", default=False, action="store_true")
+    parser.add_argument("--bin", "-b", help="print eeprom data", default=False, action="store_true")
+    parser.add_argument("--comp", "-c", help="compare bin", default=False, action="store_true")
     parser.add_argument("--lcid", "-l", help="Location ID", type=str)
     parser.add_argument("--deviceid", "-d", help="Device ID", default="1", type=str)
     parser.add_argument("--imgwrite", "-iw", help="write image", type=str)
@@ -1674,7 +1558,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    esi = Esi(args.filename, lcid=args.lcid, deviceid=args.deviceid)
+    esi = Esi(args.filename, lcid=args.lcid, deviceid=args.deviceid, debug=args.debug)
 
     if args.info:
         esi.Info()
