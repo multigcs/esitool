@@ -46,12 +46,37 @@ datatypes = {
     0x1B: "UINT64",
 }
 
+lcidinfo = {
+    "1031": "German (Germany)",
+    "1033": "English (United States)",
+    "1036": "French (France)",
+    "1027": "Catalan",
+    "1028": "Chinese (Taiwan)",
+    "1034": "Spanish (Traditional Sort)",
+    "1040": "Italian (Italy)",
+    "1041": "Japanese",
+    "1043": "Dutch (Netherlands)",
+    "1044": "Norwegian (Bokmal)",
+    "1049": "Russian",
+    "1053": "Swedish",
+    "2052": "Chinese (PRC)",
+    "2055": "German (Switzerland)",
+    "2057": "English (United Kingdom)",
+    "2068": "Norwegian (Nynorsk)",
+    "2070": "Portuguese (Portugal)",
+    "3076": "Chinese (Hong Kong S.A.R.)",
+    "3081": "English (Australia)",
+    "3084": "French (Canada)",
+    "4100": "Chinese (Singapore)",
+}
 
 class Base:
     def __init__(self, parent):
         self.parent = parent
         self.strings = parent.strings
         self.xml_root = parent.xml_root
+        self.lcid = parent.lcid
+        self.lcids = parent.lcids
         self.bindata = []
         self.offset = 0
         self.startpos = 0
@@ -153,6 +178,11 @@ class Base:
         result = base_element.findall(xpath)
         if result is not None and result:
             for element in result:
+                lcId = element.get("LcId")
+                if lcId and lcId not in self.lcids:
+                    self.lcids.append(lcId)
+                if lcId and self.lcid and lcId != self.lcid:
+                    continue    
                 if attribute:
                     value = element.get(attribute, default)
                 else:
@@ -348,7 +378,6 @@ class stdconfig(Base):
         bootStrapElement = base_element.find("./Descriptions/Devices/Device[1]/Eeprom/BootStrap")
         if bootStrapElement is not None:
             bootStrap = bytearray.fromhex(bootStrapElement.text)
-            print(bootStrap)
             cpos = 0
             self.bs_rec_mbox_offset = struct.unpack(f"<H", bootStrap[cpos : cpos + 2])[0]
             cpos += 2
@@ -985,7 +1014,6 @@ class syncm_entry(Base):
         self.startpos = self.parent.startpos
         self.bindata = bindata
         self.offset = 0
-        print(bindata)
         self.phys_address = self.binVarRead(bindata, 2)  # 0
         self.lenght = self.binVarRead(bindata, 2)  # 2
         self.control = self.binVarRead(bindata, 1)  # 4
@@ -1137,6 +1165,7 @@ class strings(Base):
             text = bindata[self.offset : self.offset + strlen].decode()
             self.strings.append(text)
             self.offset += strlen
+
         if self.offset % 2 != 0:
             self.fill = bindata[-1]
             self.offset += 1
@@ -1147,7 +1176,7 @@ class strings(Base):
         num_strings = len(self.strings[1:])
         bindata += self.binVarWrite(num_strings, 1)
         for text in self.strings[1:]:
-            strlen = len(text)
+            strlen = len(text.encode())
             bindata += self.binVarWrite(strlen, 1)
             bindata += list(text.encode())
         if len(bindata) % 2 != 0:
@@ -1226,7 +1255,9 @@ cat_mapping = {
 
 
 class Esi(Base):
-    def __init__(self, filename):
+    def __init__(self, filename, lcid=None):
+        self.lcid = lcid
+        self.lcids = []
         self.offset = 0
         self.catalogs = {}
         self.xml_root = None
@@ -1345,6 +1376,10 @@ class Esi(Base):
         self.stdconfig.Info(prefix)
         for cat_num, catalog in self.catalogs.items():
             catalog.Info(prefix)
+        if self.lcids:
+            print(f"{prefix}Locale Identifiers (LcId's):")
+            for lcid in sorted(self.lcids):
+                self.printKeyValue("LcId", f"{lcid} ({lcidinfo.get(lcid, '')})", prefix + "   ")
         print("")
 
     def binWrite(self):
@@ -1400,11 +1435,12 @@ if __name__ == "__main__":
     parser.add_argument("--xml", "-x", help="print xml", default=False, action="store_true")
     parser.add_argument("--bin", "-b", help="print eeprom data", default=False, action="store_true")
     parser.add_argument("--comp", "-c", help="compare bin", default=False, action="store_true")
+    parser.add_argument("--lcid", "-l", help="Location ID", type=str)
     parser.add_argument("--binwrite", "-bw", help="write eeprom", type=str)
     parser.add_argument("filename", help="input filename .xml|.bin|.hex", nargs="?", type=str, default="")
     args = parser.parse_args()
 
-    esi = Esi(args.filename)
+    esi = Esi(args.filename, lcid=args.lcid)
 
     if args.info:
         esi.Info()
