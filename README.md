@@ -10,6 +10,7 @@ Ethercat ESI-File Tool
 * bin read
 * xml read
 * bit compatible to siitool (xml->bin / but small test base)
+* initial lcid support
 
 ## TODO
 * more tests
