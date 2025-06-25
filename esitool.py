@@ -1553,6 +1553,8 @@ class Esi(Base):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    if dialog is not None:
+        parser.add_argument("--menu", "-m", help="use menu", default=False, action="store_true")
     parser.add_argument("--debug", "-D", help="show debug infos", default=False, action="store_true")
     parser.add_argument("--info", "-i", help="show info", default=False, action="store_true")
     parser.add_argument("--xml", "-x", help="print xml", default=False, action="store_true")
@@ -1571,7 +1573,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if dialog is not None:
+    if dialog is not None and args.menu:
         esi = Esi(args.filename)
 
         if args.deviceid is None and esi.deviceids:
