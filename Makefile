@@ -10,6 +10,9 @@ test: testfiles
 format:
 	ruff format *.py tests/*.py
 
+check:
+	ruff check *.py tests/*.py
+
 testfiles: ${BINFILES}
 
 tests/%.bin: tests/%.xml
