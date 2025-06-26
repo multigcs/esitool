@@ -4,6 +4,7 @@
 
 import argparse
 import sys
+import tempfile
 from lxml import etree
 import subprocess
 import struct
@@ -88,6 +89,7 @@ class Base:
         self.deviceid = parent.deviceid
         self.deviceids = parent.deviceids
         self.debug = parent.debug
+        self.device_info = parent.device_info
         self.bindata = []
         self.offset = 0
         self.startpos = 0
@@ -502,6 +504,7 @@ class general(Base):
         self.offset += 12  # 19
         if self.offset != self.size():
             print("SIZE ERROR:", self, self.offset, self.size())
+        self.device_info["name"] = self.value2xmlText(self.nameindex)
         return self.offset
 
     def binWrite(self):
@@ -582,6 +585,7 @@ class general(Base):
                         ports[cn] = 0x03
                 self.phys_port01 = (ports[1] << 4) | ports[0]
                 self.phys_port23 = (ports[3] << 4) | ports[2]
+        self.device_info["name"] = self.value2xmlText(self.nameindex)
 
     def xmlWrite(self, base_element):
         Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
@@ -1335,6 +1339,7 @@ class Esi(Base):
             deviceid = "1"
         self.deviceid = deviceid
         self.deviceids = []
+        self.device_info = {"name": ""}
         self.debug = debug
         self.images = {}
         self.offset = 0
@@ -1566,6 +1571,42 @@ class Esi(Base):
         return None
 
 
+def ethercat_slaves():
+    menuentries = []
+    cmd = ["ethercat", "slaves"]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode == 0:
+        for line in result.stdout.decode().split("\n"):
+            if not line:
+                continue
+            splitted = line.split()
+            slave_id = splitted[0]
+            full_id = splitted[1]
+            status = splitted[2]
+            plus = splitted[3]
+            slave_name = " ".join(splitted[4:])
+            menuentries.append((slave_id, slave_name))
+    return menuentries
+
+
+def ethercat_sii_write(slave_id, bindata):
+    with tempfile.NamedTemporaryFile() as tmp:
+        open(tmp.name, "wb").write(bindata)
+        cmd = ["ethercat", "sii_write", "-p", slave_id, tmp.name]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode == 0:
+            print("done")
+        else:
+            print("#################################################")
+            print(f"# error writing eeprom to slave ({slave_id})")
+            print("#################################################")
+            print(f"# cmd: {' '.join(cmd)}")
+            print("#################################################")
+            print("")
+            print(result.stderr.decode())
+            exit(1)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     if dialog is not None:
@@ -1591,22 +1632,9 @@ if __name__ == "__main__":
 
     if dialog is not None and args.menu:
         if not args.filename:
-            d = dialog.Dialog()
-
-            cmd = ["ethercat", "slaves"]
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if result.returncode == 0:
-                menuentries = []
-                for line in result.stdout.decode().split("\n"):
-                    if not line:
-                        continue
-                    splitted = line.split()
-                    slave_id = splitted[0]
-                    full_id = splitted[1]
-                    status = splitted[2]
-                    plus = splitted[3]
-                    slave_name = " ".join(splitted[4:])
-                    menuentries.append((slave_id, slave_name))
+            menuentries = ethercat_slaves()
+            if menuentries:
+                d = dialog.Dialog()
                 code, tag = d.menu("read eeprom from slave:", choices=menuentries)
                 if code != "ok":
                     exit(0)
@@ -1641,6 +1669,28 @@ if __name__ == "__main__":
 
     esi = Esi(args.filename, lcid=args.lcid, deviceid=args.deviceid, debug=args.debug)
 
+    if args.menu and args.info is False and args.xml is False and args.bin is False and args.binsave is None and args.imgsave is None and args.binwrite is None:
+        menuentries = (
+            ("I", "show Info"),
+            ("X", "print XML (uncomplete)"),
+            ("B", "print Binary"),
+            ("W", "write eeprom"),
+        )
+        d = dialog.Dialog()
+        code, tag = d.menu(f"select output for '{esi.device_info['name']}':", choices=menuentries)
+        if code != "ok":
+            exit(0)
+        if tag == "I":
+            args.info = True
+        elif tag == "X":
+            args.xml = True
+        elif tag == "B":
+            args.bin = True
+        elif tag == "W":
+            args.binwrite = ""
+        else:
+            exit(0)
+
     if args.info:
         esi.Info()
 
@@ -1657,10 +1707,35 @@ if __name__ == "__main__":
         print(f"writing binary data to '{args.binsave}'")
         open(args.binsave, "wb").write(res)
 
-    if args.imgsave:
+    if args.imgsave is not None:
+        if not args.binwrite and args.menu:
+            menuentries = []
+            for image in esi.images:
+                menuentries.append((image, image))
+            if menuentries:
+                d = dialog.Dialog()
+                code, tag = d.menu("write eeprom to slave:", choices=menuentries)
+                if code != "ok":
+                    exit(0)
+                args.imgsave = tag
+
         if args.imgsave not in esi.images:
             print(f"{args.imgsave} not found in {list(esi.images.keys())}")
             exit(1)
         filename = f"{args.imgsave.replace('/', '_')}.bmp"
         print(f"write image to {filename}")
         open(filename, "wb").write(esi.images[args.imgsave])
+
+    if args.binwrite is not None:
+        if not args.binwrite and args.menu:
+            menuentries = ethercat_slaves()
+            if menuentries:
+                d = dialog.Dialog()
+                code, tag = d.menu(f"write eeprom for '{esi.device_info['name']}' to slave:", choices=menuentries)
+                if code != "ok":
+                    exit(0)
+                args.binwrite = tag
+        slave_id = args.binwrite
+        bindata = esi.binWrite()
+        print(f"write bin to eeprom on slave ({slave_id})...")
+        ethercat_sii_write(slave_id, bindata)
