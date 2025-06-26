@@ -1674,6 +1674,7 @@ if __name__ == "__main__":
             ("I", "show Info"),
             ("X", "print XML (uncomplete)"),
             ("B", "print Binary"),
+            ("P", "save Image"),
             ("W", "write eeprom"),
         )
         d = dialog.Dialog()
@@ -1688,6 +1689,8 @@ if __name__ == "__main__":
             args.bin = True
         elif tag == "W":
             args.binwrite = ""
+        elif tag == "P":
+            args.imgsave = ""
         else:
             exit(0)
 
@@ -1718,13 +1721,16 @@ if __name__ == "__main__":
                 if code != "ok":
                     exit(0)
                 args.imgsave = tag
-
-        if args.imgsave not in esi.images:
+            else:
+                print(f"no images found")
+        if not args.imgsave:
+            print("no image selected")
+        elif args.imgsave not in esi.images:
             print(f"{args.imgsave} not found in {list(esi.images.keys())}")
-            exit(1)
-        filename = f"{args.imgsave.replace('/', '_')}.bmp"
-        print(f"write image to {filename}")
-        open(filename, "wb").write(esi.images[args.imgsave])
+        else:
+            filename = f"{args.imgsave.replace('/', '_')}.bmp"
+            print(f"write image to {filename}")
+            open(filename, "wb").write(esi.images[args.imgsave])
 
     if args.binwrite is not None:
         if not args.binwrite and args.menu:
