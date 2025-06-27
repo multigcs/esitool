@@ -1787,8 +1787,10 @@ if __name__ == "__main__":
         default="",
     )
     args = parser.parse_args()
+    if dialog is None:
+        args.menu = None
 
-    if dialog is not None and args.menu:
+    if args.menu:
         if not args.filename:
             menuentries = ethercat_slaves()
             if menuentries:
