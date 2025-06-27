@@ -140,20 +140,20 @@ class Base:
 
     def printKeyDatatype(self, key, value, prefix=""):
         datatype = datatypes.get(value, "UNSET")
-        print(f"{prefix}   {key:30} {value:6d} ({datatype})")
+        return [f"{prefix}   {key:30} {value:6d} ({datatype})"]
 
     def printKeyString(self, key, value, prefix=""):
         if value < len(self.parent.strings):
             text = self.parent.strings[value]
-            print(f"{prefix}   {key:30} '{text}'")
+            return [f"{prefix}   {key:30} '{text}'"]
         else:
-            print(f"{prefix}   {key:30} {value:6d}")
+            return [f"{prefix}   {key:30} {value:6d}"]
 
     def printKeyValue(self, key, value, prefix="", fmt=None):
         if isinstance(value, int):
-            print(f"{prefix}   {key:30} 0x{value:04x} ({value})")
+            return [f"{prefix}   {key:30} 0x{value:04x} ({value})"]
         else:
-            print(f"{prefix}   {key:30} {value:6s}")
+            return [f"{prefix}   {key:30} {value:6s}"]
 
     def value2xmlText(self, value):
         if value < len(self.parent.strings):
@@ -298,19 +298,21 @@ class preamble(Base):
         pass
 
     def Info(self, prefix=""):
-        print(f"{prefix}preamble: {self.startpos}")
+        output = []
+        output.append(f"{prefix}preamble: {self.startpos}")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyValue("pdi_ctrl", self.pdi_ctrl, prefix)
-        self.printKeyValue("pdi_conf", self.pdi_conf, prefix)
-        self.printKeyValue("sync_impulse", self.sync_impulse, prefix)
-        self.printKeyValue("pdi_conf2", self.pdi_conf2, prefix)
-        self.printKeyValue("alias", self.alias, prefix)
-        self.printKeyValue("checksum", self.checksum, prefix)
-        print("")
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyValue("pdi_ctrl", self.pdi_ctrl, prefix)
+        output += self.printKeyValue("pdi_conf", self.pdi_conf, prefix)
+        output += self.printKeyValue("sync_impulse", self.sync_impulse, prefix)
+        output += self.printKeyValue("pdi_conf2", self.pdi_conf2, prefix)
+        output += self.printKeyValue("alias", self.alias, prefix)
+        output += self.printKeyValue("checksum", self.checksum, prefix)
+        output.append("")
+        return output
 
 
 class stdconfig(Base):
@@ -336,7 +338,7 @@ class stdconfig(Base):
         self.eeprom_size = self.binVarRead(bindata, 2)  # 108
         self.version = self.binVarRead(bindata, 2)  # 110
         if self.offset != self.size():
-            print("SIZE ERROR:", self, self.offset, self.size())
+            output.append("SIZE ERROR:", self, self.offset, self.size())
         return self.offset
 
     def binWrite(self):
@@ -463,28 +465,42 @@ class stdconfig(Base):
             Type.set("RevisionNo", self.value2xml(self.revision_id, 8))
 
     def Info(self, prefix=""):
-        print(f"{prefix}stdconfig: {self.startpos}")
+        output = []
+        output.append(f"{prefix}stdconfig: {self.startpos}")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyValue("vendor_id", self.vendor_id, prefix)
-        self.printKeyValue("product_id", self.product_id, prefix)
-        self.printKeyValue("revision_id", self.revision_id, prefix)
-        self.printKeyValue("serial", self.serial, prefix)
-        self.printKeyValue("bs_rec_mbox_offset", self.bs_rec_mbox_offset, prefix)
-        self.printKeyValue("bs_rec_mbox_size", self.bs_rec_mbox_size, prefix)
-        self.printKeyValue("bs_snd_mbox_offset", self.bs_snd_mbox_offset, prefix)
-        self.printKeyValue("bs_snd_mbox_size", self.bs_snd_mbox_size, prefix)
-        self.printKeyValue("std_rec_mbox_offset", self.std_rec_mbox_offset, prefix)
-        self.printKeyValue("std_rec_mbox_size", self.std_rec_mbox_size, prefix)
-        self.printKeyValue("std_snd_mbox_offset", self.std_snd_mbox_offset, prefix)
-        self.printKeyValue("std_snd_mbox_size", self.std_snd_mbox_size, prefix)
-        self.printKeyValue("mailbox_protocol", self.mailbox_protocol, prefix)
-        self.printKeyValue("eeprom_size", self.eeprom_size, prefix)
-        self.printKeyValue("version", self.version, prefix)
-        print("")
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyValue("vendor_id", self.vendor_id, prefix)
+        output += self.printKeyValue("product_id", self.product_id, prefix)
+        output += self.printKeyValue("revision_id", self.revision_id, prefix)
+        output += self.printKeyValue("serial", self.serial, prefix)
+        output += self.printKeyValue(
+            "bs_rec_mbox_offset", self.bs_rec_mbox_offset, prefix
+        )
+        output += self.printKeyValue("bs_rec_mbox_size", self.bs_rec_mbox_size, prefix)
+        output += self.printKeyValue(
+            "bs_snd_mbox_offset", self.bs_snd_mbox_offset, prefix
+        )
+        output += self.printKeyValue("bs_snd_mbox_size", self.bs_snd_mbox_size, prefix)
+        output += self.printKeyValue(
+            "std_rec_mbox_offset", self.std_rec_mbox_offset, prefix
+        )
+        output += self.printKeyValue(
+            "std_rec_mbox_size", self.std_rec_mbox_size, prefix
+        )
+        output += self.printKeyValue(
+            "std_snd_mbox_offset", self.std_snd_mbox_offset, prefix
+        )
+        output += self.printKeyValue(
+            "std_snd_mbox_size", self.std_snd_mbox_size, prefix
+        )
+        output += self.printKeyValue("mailbox_protocol", self.mailbox_protocol, prefix)
+        output += self.printKeyValue("eeprom_size", self.eeprom_size, prefix)
+        output += self.printKeyValue("version", self.version, prefix)
+        output.append("")
+        return output
 
 
 class general(Base):
@@ -523,7 +539,7 @@ class general(Base):
         self.physical_address = self.binVarRead(bindata, 2)  # 18
         self.offset += 12  # 19
         if self.offset != self.size():
-            print("SIZE ERROR:", self, self.offset, self.size())
+            output.append("SIZE ERROR:", self, self.offset, self.size())
         self.device_info["name"] = self.value2xmlText(self.nameindex)
         return self.offset
 
@@ -627,16 +643,17 @@ class general(Base):
             Type.text = self.value2xmlText(self.orderindex)
 
     def Info(self, prefix=""):
-        print(f"{prefix}general: {self.startpos}")
+        output = []
+        output.append(f"{prefix}general: {self.startpos}")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyString("nameindex", self.nameindex, prefix)
-        self.printKeyString("groupindex", self.groupindex, prefix)
-        self.printKeyString("imageindex", self.imageindex, prefix)
-        self.printKeyString("orderindex", self.orderindex, prefix)
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyString("nameindex", self.nameindex, prefix)
+        output += self.printKeyString("groupindex", self.groupindex, prefix)
+        output += self.printKeyString("imageindex", self.imageindex, prefix)
+        output += self.printKeyString("orderindex", self.orderindex, prefix)
 
         """
   CoE Details:
@@ -647,86 +664,95 @@ class general(Base):
     Enable Upload at startup: .... no
     Enable SDO complete access: .. no
         """
-        print(f"{prefix}   coe_details:")
-        self.printKeyValue(
+        output.append(f"{prefix}   coe_details:")
+        output += self.printKeyValue(
             "  Enable SDO", (self.coe_details & (1 << 0)) and "yes" or "no", prefix
         )
-        self.printKeyValue(
+        output += self.printKeyValue(
             "  Enable SDO Info", (self.coe_details & (1 << 1)) and "yes" or "no", prefix
         )
-        self.printKeyValue(
+        output += self.printKeyValue(
             "  Enable PDO Assign",
             (self.coe_details & (1 << 2)) and "yes" or "no",
             prefix,
         )
-        self.printKeyValue(
+        output += self.printKeyValue(
             "  Enable PDO Configuration",
             (self.coe_details & (1 << 3)) and "yes" or "no",
             prefix,
         )
-        self.printKeyValue(
+        output += self.printKeyValue(
             "  Enable Upload at Startup",
             (self.coe_details & (1 << 4)) and "yes" or "no",
             prefix,
         )
-        self.printKeyValue(
+        output += self.printKeyValue(
             "  Enable SDO complete access",
             (self.coe_details & (1 << 5)) and "yes" or "no",
             prefix,
         )
 
-        self.printKeyValue(
+        output += self.printKeyValue(
             "foe_details", self.foe_details and "enabled" or "not enabled", prefix
         )
-        self.printKeyValue(
+        output += self.printKeyValue(
             "eoe_enabled", self.eoe_enabled and "enabled" or "not enabled", prefix
         )
-        print("")
+        output.append("")
 
-        # self.printKeyValue("soe_channels", self.soe_channels, prefix)
-        # self.printKeyValue("ds402_channels", self.ds402_channels, prefix)
-        # self.printKeyValue("sysman_class", self.sysman_class, prefix)
+        # output += self.printKeyValue("soe_channels", self.soe_channels, prefix)
+        # output += self.printKeyValue("ds402_channels", self.ds402_channels, prefix)
+        # output += self.printKeyValue("sysman_class", self.sysman_class, prefix)
 
-        self.printKeyValue(
+        output += self.printKeyValue(
             "Flag SafeOp",
             (self.flags & (1 << 0)) and "enabled" or "not enabled",
             prefix,
         )
-        self.printKeyValue(
+        output += self.printKeyValue(
             "Flag notLRW",
             (self.flags & (1 << 0)) and "enabled" or "not enabled",
             prefix,
         )
-        self.printKeyValue(
+        output += self.printKeyValue(
             "Flag MboxDataLinkLayer",
             (self.flags & (1 << 0)) and "enabled" or "not enabled",
             prefix,
         )
-        self.printKeyValue(
+        output += self.printKeyValue(
             "Flag IdentALStatus",
             (self.flags & (1 << 0)) and "enabled" or "not enabled",
             prefix,
         )
-        self.printKeyValue(
+        output += self.printKeyValue(
             "Flag IdentPhysicalMemory",
             (self.flags & (1 << 0)) and "enabled" or "not enabled",
             prefix,
         )
-        print("")
-        self.printKeyValue("current_ebus", self.current_ebus, prefix)
+        output.append("")
+        output += self.printKeyValue("current_ebus", self.current_ebus, prefix)
         phys_port0 = (self.phys_port01) & 0x0F
         phys_port1 = (self.phys_port01 >> 4) & 0x0F
         phys_port2 = (self.phys_port23) & 0x0F
         phys_port3 = (self.phys_port23 >> 4) & 0x0F
         modes = {0: "not used", 1: "MII", 3: "EBUS"}
-        print(f"{prefix}   Physical Ports:")
-        self.printKeyValue("  Port 0", modes.get(phys_port0, phys_port0), prefix)
-        self.printKeyValue("  Port 1", modes.get(phys_port1, phys_port1), prefix)
-        self.printKeyValue("  Port 2", modes.get(phys_port2, phys_port2), prefix)
-        self.printKeyValue("  Port 3", modes.get(phys_port3, phys_port3), prefix)
-        print("")
-        self.printKeyValue("physical_address", self.physical_address, prefix)
-        print("")
+        output.append(f"{prefix}   Physical Ports:")
+        output += self.printKeyValue(
+            "  Port 0", modes.get(phys_port0, phys_port0), prefix
+        )
+        output += self.printKeyValue(
+            "  Port 1", modes.get(phys_port1, phys_port1), prefix
+        )
+        output += self.printKeyValue(
+            "  Port 2", modes.get(phys_port2, phys_port2), prefix
+        )
+        output += self.printKeyValue(
+            "  Port 3", modes.get(phys_port3, phys_port3), prefix
+        )
+        output.append("")
+        output += self.printKeyValue("physical_address", self.physical_address, prefix)
+        output.append("")
+        return output
 
 
 class txpdo(Base):
@@ -804,22 +830,24 @@ class txpdo(Base):
             entry.xmlWrite(element)
 
     def Info(self, prefix=""):
-        print(f"{prefix}txpdo: {self.startpos}")
+        output = []
+        output.append(f"{prefix}txpdo: {self.startpos}")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyValue("index", self.index, prefix)
-        self.printKeyValue("entries", self.entries, prefix)
-        self.printKeyValue("syncmanager", self.syncmanager, prefix)
-        self.printKeyValue("dcsync", self.dcsync, prefix)
-        self.printKeyString("name_index", self.name_index, prefix)
-        self.printKeyValue("flags", self.flags, prefix)
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyValue("index", self.index, prefix)
+        output += self.printKeyValue("entries", self.entries, prefix)
+        output += self.printKeyValue("syncmanager", self.syncmanager, prefix)
+        output += self.printKeyValue("dcsync", self.dcsync, prefix)
+        output += self.printKeyString("name_index", self.name_index, prefix)
+        output += self.printKeyValue("flags", self.flags, prefix)
         for num, entry in self.entrys.items():
-            print(f"{prefix}   {num}:")
-            entry.Info(f"{prefix}   ")
-        print("")
+            output.append(f"{prefix}   {num}:")
+            output += entry.Info(f"{prefix}   ")
+        output.append("")
+        return output
 
 
 class rxpdo(Base):
@@ -897,22 +925,24 @@ class rxpdo(Base):
             entry.xmlWrite(element)
 
     def Info(self, prefix=""):
-        print(f"{prefix}rxpdo: {self.startpos}")
+        output = []
+        output.append(f"{prefix}rxpdo: {self.startpos}")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyValue("index", self.index, prefix)
-        self.printKeyValue("entries", self.entries, prefix)
-        self.printKeyValue("syncmanager", self.syncmanager, prefix)
-        self.printKeyValue("dcsync", self.dcsync, prefix)
-        self.printKeyString("name_index", self.name_index, prefix)
-        self.printKeyValue("flags", self.flags, prefix)
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyValue("index", self.index, prefix)
+        output += self.printKeyValue("entries", self.entries, prefix)
+        output += self.printKeyValue("syncmanager", self.syncmanager, prefix)
+        output += self.printKeyValue("dcsync", self.dcsync, prefix)
+        output += self.printKeyString("name_index", self.name_index, prefix)
+        output += self.printKeyValue("flags", self.flags, prefix)
         for num, entry in self.entrys.items():
-            print(f"{prefix}   {num}:")
-            entry.Info(f"{prefix}   ")
-        print("")
+            output.append(f"{prefix}   {num}:")
+            output += entry.Info(f"{prefix}   ")
+        output.append("")
+        return output
 
 
 class pdo_entry(Base):
@@ -966,19 +996,21 @@ class pdo_entry(Base):
         )
 
     def Info(self, prefix=""):
-        print(f"{prefix}pdo_entry:")
+        output = []
+        output.append(f"{prefix}pdo_entry:")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyValue("index", self.index, prefix)
-        self.printKeyValue("subindex", self.subindex, prefix)
-        self.printKeyString("string_index", self.string_index, prefix)
-        self.printKeyDatatype("data_type", self.data_type, prefix)
-        self.printKeyValue("bit_length", self.bit_length, prefix)
-        self.printKeyValue("flags", self.flags, prefix)
-        print("")
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyValue("index", self.index, prefix)
+        output += self.printKeyValue("subindex", self.subindex, prefix)
+        output += self.printKeyString("string_index", self.string_index, prefix)
+        output += self.printKeyDatatype("data_type", self.data_type, prefix)
+        output += self.printKeyValue("bit_length", self.bit_length, prefix)
+        output += self.printKeyValue("flags", self.flags, prefix)
+        output.append("")
+        return output
 
 
 class fmmu(Base):
@@ -1032,16 +1064,18 @@ class fmmu(Base):
         pass
 
     def Info(self, prefix=""):
-        print(f"{prefix}fmmu: {self.startpos}")
+        output = []
+        output.append(f"{prefix}fmmu: {self.startpos}")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
         for num, entry in self.entrys.items():
-            print(f"{prefix}   {num}:")
-            entry.Info(f"{prefix}   ")
-        print("")
+            output.append(f"{prefix}   {num}:")
+            output += entry.Info(f"{prefix}   ")
+        output.append("")
+        return output
 
 
 class fmmu_entry(Base):
@@ -1077,14 +1111,16 @@ class fmmu_entry(Base):
                 self.usage = 0x03
 
     def Info(self, prefix=""):
-        print(f"{prefix}fmmu_entry:")
+        output = []
+        output.append(f"{prefix}fmmu_entry:")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyValue("usage", self.usage, prefix)
-        print("")
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyValue("usage", self.usage, prefix)
+        output.append("")
+        return output
 
 
 class syncm(Base):
@@ -1134,16 +1170,18 @@ class syncm(Base):
             entry.xmlWrite(base_element)
 
     def Info(self, prefix=""):
-        print(f"{prefix}syncm: {self.startpos}")
+        output = []
+        output.append(f"{prefix}syncm: {self.startpos}")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
         for num, entry in self.entrys.items():
-            print(f"{prefix}   {num}:")
-            entry.Info(f"{prefix}   ")
-        print("")
+            output.append(f"{prefix}   {num}:")
+            output += entry.Info(f"{prefix}   ")
+        output.append("")
+        return output
 
 
 class syncm_entry(Base):
@@ -1204,19 +1242,21 @@ class syncm_entry(Base):
         )
 
     def Info(self, prefix=""):
-        print(f"{prefix}syncm_entry:")
+        output = []
+        output.append(f"{prefix}syncm_entry:")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyValue("phys_address", self.phys_address, prefix)
-        self.printKeyValue("lenght", self.lenght, prefix)
-        self.printKeyValue("control", self.control, prefix)
-        self.printKeyValue("status", self.status, prefix)
-        self.printKeyValue("enable", self.enable, prefix)
-        self.printKeyValue("type", self.type, prefix)
-        print("")
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyValue("phys_address", self.phys_address, prefix)
+        output += self.printKeyValue("lenght", self.lenght, prefix)
+        output += self.printKeyValue("control", self.control, prefix)
+        output += self.printKeyValue("status", self.status, prefix)
+        output += self.printKeyValue("enable", self.enable, prefix)
+        output += self.printKeyValue("type", self.type, prefix)
+        output.append("")
+        return output
 
 
 class dclock(Base):
@@ -1279,21 +1319,23 @@ class dclock(Base):
         pass
 
     def Info(self, prefix=""):
-        print(f"{prefix}dclock: {self.startpos}")
+        output = []
+        output.append(f"{prefix}dclock: {self.startpos}")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyValue("cycleTime0", self.cycleTime0, prefix)
-        self.printKeyValue("shiftTime0", self.shiftTime0, prefix)
-        self.printKeyValue("shiftTime1", self.shiftTime1, prefix)
-        self.printKeyValue("sync1CycleFactor", self.sync1CycleFactor, prefix)
-        self.printKeyValue("assignActivate", self.assignActivate, prefix)
-        self.printKeyValue("sync0CycleFactor", self.sync0CycleFactor, prefix)
-        self.printKeyValue("nameIdx", self.nameIdx, prefix)
-        self.printKeyValue("descIdx", self.descIdx, prefix)
-        print("")
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyValue("cycleTime0", self.cycleTime0, prefix)
+        output += self.printKeyValue("shiftTime0", self.shiftTime0, prefix)
+        output += self.printKeyValue("shiftTime1", self.shiftTime1, prefix)
+        output += self.printKeyValue("sync1CycleFactor", self.sync1CycleFactor, prefix)
+        output += self.printKeyValue("assignActivate", self.assignActivate, prefix)
+        output += self.printKeyValue("sync0CycleFactor", self.sync0CycleFactor, prefix)
+        output += self.printKeyValue("nameIdx", self.nameIdx, prefix)
+        output += self.printKeyValue("descIdx", self.descIdx, prefix)
+        output.append("")
+        return output
 
 
 class strings(Base):
@@ -1341,17 +1383,19 @@ class strings(Base):
         pass
 
     def Info(self, prefix=""):
+        output = []
         self.num_strings = len(self.parent.strings[1:])
-        print(f"{prefix}strings: {self.startpos}")
+        output.append(f"{prefix}strings: {self.startpos}")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyValue("Strings", self.num_strings, prefix)
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyValue("Strings", self.num_strings, prefix)
         for tn, text in enumerate(self.strings):
-            self.printKeyValue(f"{tn}", f"'{text}'", prefix)
-        print("")
+            output += self.printKeyValue(f"{tn}", f"'{text}'", prefix)
+        output.append("")
+        return output
 
 
 class unknown_cat(Base):
@@ -1376,15 +1420,17 @@ class unknown_cat(Base):
         pass
 
     def Info(self, prefix=""):
-        print(f"{prefix}UNKNOWN CATALOG: {self.startpos}")
+        output = []
+        output.append(f"{prefix}UNKNOWN CATALOG: {self.startpos}")
         if self.debug > 0:
-            print(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bin:", list(self.bindata))
         if self.bindata and list(self.bindata) != list(self.binWrite()):
-            print(f"{prefix}   bin:", list(self.bindata))
-            print(f"{prefix}   bak:", list(self.binWrite()))
-        self.printKeyValue("Type-Id", self.cat_type, prefix)
-        self.printKeyValue("Cat-Size", self.cat_size, prefix)
-        print("")
+            output.append(f"{prefix}   bin:", list(self.bindata))
+            output.append(f"{prefix}   bak:", list(self.binWrite()))
+        output += self.printKeyValue("Type-Id", self.cat_type, prefix)
+        output += self.printKeyValue("Cat-Size", self.cat_size, prefix)
+        output.append("")
+        return output
 
 
 cat_mapping = {
@@ -1586,38 +1632,44 @@ class Esi(Base):
         return etree.tostring(root, pretty_print=True).decode()
 
     def Info(self, prefix=""):
+        output = []
         self.preamble.Info(prefix)
         self.stdconfig.Info(prefix)
         for cat_num, catalog in self.catalogs.items():
-            catalog.Info(prefix)
+            output += catalog.Info(prefix)
 
         if self.deviceids:
-            print(f"{prefix}DeviceId's:")
+            output.append(f"{prefix}DeviceId's:")
             for deviceid, name in enumerate(self.deviceids, 1):
                 if str(self.deviceid) == str(deviceid):
-                    self.printKeyValue("DeviceId", f"{deviceid} ({name}) *", prefix)
+                    output += self.printKeyValue(
+                        "DeviceId", f"{deviceid} ({name}) *", prefix
+                    )
                 else:
-                    self.printKeyValue("DeviceId", f"{deviceid} ({name})", prefix)
-        print("")
+                    output += self.printKeyValue(
+                        "DeviceId", f"{deviceid} ({name})", prefix
+                    )
+        output.append("")
 
         if self.lcids:
-            print(f"{prefix}Locale Identifiers (LcId's):")
+            output.append(f"{prefix}Locale Identifiers (LcId's):")
             for lcid in sorted(self.lcids):
                 if self.lcid == lcid:
-                    self.printKeyValue(
+                    output += self.printKeyValue(
                         "LcId", f"{lcid} ({lcidinfo.get(lcid, '')}) *", prefix
                     )
                 else:
-                    self.printKeyValue(
+                    output += self.printKeyValue(
                         "LcId", f"{lcid} ({lcidinfo.get(lcid, '')})", prefix
                     )
-        print("")
+        output.append("")
 
         if self.images:
-            print(f"{prefix}Images:")
+            output.append(f"{prefix}Images:")
             for name in sorted(self.images):
-                self.printKeyValue("Image", f"{name}", prefix)
-        print("")
+                output += self.printKeyValue("Image", f"{name}", prefix)
+        output.append("")
+        return output
 
     def binWrite(self):
         bindata = []
@@ -1675,9 +1727,9 @@ def ethercat_slaves():
                 continue
             splitted = line.split()
             slave_id = splitted[0]
-            full_id = splitted[1]
-            status = splitted[2]
-            plus = splitted[3]
+            # full_id = splitted[1]
+            # status = splitted[2]
+            # plus = splitted[3]
             slave_name = " ".join(splitted[4:])
             menuentries.append((slave_id, slave_name))
     return menuentries
@@ -1813,7 +1865,12 @@ if __name__ == "__main__":
             exit(0)
 
     if args.info:
-        esi.Info()
+        output = esi.Info()
+        if args.menu:
+            d = dialog.Dialog()
+            code, tag = d.scrollbox("\n".join(output), title="ESI-Info")
+        else:
+            print("\n".join(output))
 
     if args.xml:
         res = esi.xmlWrite()
@@ -1840,7 +1897,7 @@ if __name__ == "__main__":
                     exit(0)
                 args.imgsave = tag
             else:
-                print(f"no images found")
+                print("no images found")
         if not args.imgsave:
             print("no image selected")
         elif args.imgsave not in esi.images:
