@@ -172,11 +172,11 @@ class Base:
 
     def value2xml(self, value, size):
         if size == 2:
-            return f"#x{value:02x}"
+            return f"#x{value:02X}"
         elif size == 4:
-            return f"#x{value:04x}"
+            return f"#x{value:04X}"
         elif size == 8:
-            return f"#x{value:08x}"
+            return f"#x{value:08X}"
         return str(value)
 
     def xml_value_parse(self, value):
@@ -466,7 +466,7 @@ class stdconfig(Base):
 
     def xmlWrite(self, base_element):
         Vendor = base_element.find("./Vendor")
-        etree.SubElement(Vendor, "Id").text = str(self.vendor_id)
+        etree.SubElement(Vendor, "Id").text = self.value2xml(self.vendor_id, 8)
         Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
         Type = Device.find("./Type")
         if Type is not None:
@@ -674,6 +674,11 @@ class general(Base):
         Type = Device.find("./Type")
         if Type is not None:
             Type.text = self.value2xmlText(self.orderindex)
+
+        Group = base_element.find(f"./Descriptions/Groups/Group")
+        if Group is not None:
+            etree.SubElement(Group, "Type").text = self.value2xmlText(self.groupindex)
+            etree.SubElement(Group, "Name").text = "UNKNOWN"
 
     def Info(self, prefix=""):
         output = []
@@ -1658,16 +1663,25 @@ class Esi(Base):
             cat_num += 1
 
     def xmlWrite(self):
-        root = etree.Element("EtherCATInfo", Version="1.6")
-        # xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="EtherCATInfo.xsd"
+        xmlns = "EtherCATInfo.xsd"
+        xsi = "http://www.w3.org/2001/XMLSchema-instance"
+        root = etree.Element("EtherCATInfo", nsmap={"xsi": xsi})
+        root.set(f"{{{xsi}}}noNamespaceSchemaLocation", xmlns)
+        root.set("Version", "1.6")
+
         Vendor = etree.SubElement(root, "Vendor")
         Descriptions = etree.SubElement(root, "Descriptions")
+        Groups = etree.SubElement(Descriptions, "Groups")
+        Group = etree.SubElement(Groups, "Group")
         Devices = etree.SubElement(Descriptions, "Devices")
         Device = etree.SubElement(Devices, "Device")
         etree.SubElement(Device, "Type")
 
-        for cat_num, catalog in self.catalogs.items():
-            catalog.xmlWrite(root)
+        for ctype in categorys:
+            for cat_num, catalog in self.catalogs.items():
+                if catalog.cat_type != ctype:
+                    continue
+                catalog.xmlWrite(root)
 
         self.preamble.xmlWrite(root)
         self.stdconfig.xmlWrite(root)
