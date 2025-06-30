@@ -294,8 +294,17 @@ class preamble(Base):
                 self.alias = struct.unpack("<H", configData[cpos : cpos + 2])[0]
             cpos += 2
 
-    def xmlWrite(self, prefix=""):
-        pass
+    def xmlWrite(self, base_element):
+        Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
+        Eeprom = etree.SubElement(Device, "Eeprom")
+        ConfigData = etree.SubElement(Eeprom, "ConfigData")
+        blist = []
+        blist += struct.pack("<H", self.pdi_ctrl)
+        blist += struct.pack("<H", self.pdi_conf)
+        blist += struct.pack("<H", self.sync_impulse)
+        blist += struct.pack("<H", self.pdi_conf2)
+        blist += struct.pack("<H", self.alias)
+        ConfigData.text = "".join([f"{b:02x}" for b in list(blist)])
 
     def Info(self, prefix=""):
         output = []
@@ -463,6 +472,17 @@ class stdconfig(Base):
         if Type is not None:
             Type.set("ProductCode", self.value2xml(self.product_id, 8))
             Type.set("RevisionNo", self.value2xml(self.revision_id, 8))
+
+        Eeprom = base_element.find(
+            f"./Descriptions/Devices/Device[{self.deviceid}]/Eeprom"
+        )
+        BootStrap = etree.SubElement(Eeprom, "BootStrap")
+        blist = []
+        blist += struct.pack("<H", self.bs_rec_mbox_offset)
+        blist += struct.pack("<H", self.bs_rec_mbox_size)
+        blist += struct.pack("<H", self.bs_snd_mbox_offset)
+        blist += struct.pack("<H", self.bs_snd_mbox_size)
+        BootStrap.text = "".join([f"{b:02x}" for b in list(blist)])
 
     def Info(self, prefix=""):
         output = []
@@ -637,6 +657,19 @@ class general(Base):
 
     def xmlWrite(self, base_element):
         Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
+        physics = ""
+        ports = [0, 0, 0, 0]
+        ports[0] = (self.phys_port01 >> 4) & 0x0F
+        ports[1] = (self.phys_port01) & 0x0F
+        ports[2] = (self.phys_port23 >> 4) & 0x0F
+        ports[3] = (self.phys_port23) & 0x0F
+        for port in ports:
+            if port == 0x01:
+                physics += "Y"
+            elif port == 0x03:
+                physics += "K"
+        Device.set("Physics", physics)
+
         etree.SubElement(Device, "Name").text = self.value2xmlText(self.nameindex)
         Type = Device.find("./Type")
         if Type is not None:
@@ -1061,7 +1094,8 @@ class fmmu(Base):
             entry_num += 1
 
     def xmlWrite(self, base_element):
-        pass
+        for num, entry in self.entrys.items():
+            entry.xmlWrite(base_element)
 
     def Info(self, prefix=""):
         output = []
@@ -1097,7 +1131,14 @@ class fmmu_entry(Base):
         return 1
 
     def xmlWrite(self, base_element):
-        pass
+        Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
+        Fmmu = etree.SubElement(Device, "Fmmu")
+        if self.usage == 0x01:
+            Fmmu.text = "Outputs"
+        elif self.usage == 0x02:
+            Fmmu.text = "Inputs"
+        elif self.usage == 0x03:
+            Fmmu.text = "MBoxState"
 
     def xmlRead(self, base_element):
         self.usage = 0
@@ -1617,24 +1658,31 @@ class Esi(Base):
             cat_num += 1
 
     def xmlWrite(self):
-        root = etree.Element("EtherCATInfo")
-        etree.SubElement(root, "Vendor")
+        root = etree.Element("EtherCATInfo", Version="1.6")
+        # xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="EtherCATInfo.xsd"
+        Vendor = etree.SubElement(root, "Vendor")
         Descriptions = etree.SubElement(root, "Descriptions")
         Devices = etree.SubElement(Descriptions, "Devices")
         Device = etree.SubElement(Devices, "Device")
         etree.SubElement(Device, "Type")
 
-        self.preamble.xmlWrite(root)
-        self.stdconfig.xmlWrite(root)
         for cat_num, catalog in self.catalogs.items():
             catalog.xmlWrite(root)
 
-        return etree.tostring(root, pretty_print=True).decode()
+        self.preamble.xmlWrite(root)
+        self.stdconfig.xmlWrite(root)
+
+        etree.SubElement(Vendor, "Name").text = "UNKNOWN"
+
+        return (
+            '<?xml version="1.0" encoding="ISO8859-1"?>\n'
+            + etree.tostring(root, pretty_print=True).decode()
+        )
 
     def Info(self, prefix=""):
         output = []
-        self.preamble.Info(prefix)
-        self.stdconfig.Info(prefix)
+        output += self.preamble.Info(prefix)
+        output += self.stdconfig.Info(prefix)
         for cat_num, catalog in self.catalogs.items():
             output += catalog.Info(prefix)
 
