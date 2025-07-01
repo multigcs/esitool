@@ -170,7 +170,7 @@ class Base:
         value = datatypes.get(value, value)
         return str(value)
 
-    def value2xml(self, value, size):
+    def value2xml(self, value, size=0):
         if size == 2:
             return f"#x{value:02X}"
         elif size == 4:
@@ -1433,7 +1433,26 @@ class dclock(Base):
         self.unknown1 = [0] * self.fill_n
 
     def xmlWrite(self, base_element):
-        pass
+        Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
+        Dc = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]/Dc")
+        if Dc is None:
+            Dc = etree.SubElement(Device, "Dc")
+
+        OpMode = etree.SubElement(Dc, "OpMode")
+        etree.SubElement(OpMode, "Name").text = self.value2xmlText(self.nameIdx)
+        etree.SubElement(OpMode, "Desc").text = self.value2xmlText(self.descIdx)
+        etree.SubElement(
+            OpMode, "CycleTimeSync0", Factor=self.value2xml(self.sync0CycleFactor)
+        ).text = self.value2xml(self.cycleTime0)
+        etree.SubElement(OpMode, "ShiftTimeSync0").text = self.value2xml(
+            self.shiftTime0
+        )
+        # etree.SubElement(
+        #     OpMode, "CycleTimeSync1", Factor=self.value2xml(self.sync1CycleFactor)
+        # ).text = self.value2xml(self.cycleTime1)
+        etree.SubElement(OpMode, "ShiftTimeSync1").text = self.value2xml(
+            self.shiftTime1
+        )
 
     def Info(self, prefix=""):
         output = []
@@ -1449,8 +1468,8 @@ class dclock(Base):
         output += self.printKeyValue("sync1CycleFactor", self.sync1CycleFactor, prefix)
         output += self.printKeyValue("assignActivate", self.assignActivate, prefix)
         output += self.printKeyValue("sync0CycleFactor", self.sync0CycleFactor, prefix)
-        output += self.printKeyValue("nameIdx", self.nameIdx, prefix)
-        output += self.printKeyValue("descIdx", self.descIdx, prefix)
+        output += self.printKeyString("nameIdx", self.nameIdx, prefix)
+        output += self.printKeyString("descIdx", self.descIdx, prefix)
         output.append("")
         return output
 
