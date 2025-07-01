@@ -1341,7 +1341,7 @@ class syncm_entry(Base):
 
     def xmlWrite(self, base_element):
         Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
-        etree.SubElement(
+        Sm = etree.SubElement(
             Device,
             "Sm",
             Enable=str(self.enable),
@@ -1349,6 +1349,14 @@ class syncm_entry(Base):
             ControlByte=self.value2xml(self.control, 2),
             DefaultSize=str(self.lenght),
         )
+        if self.type == 1:
+            Sm.text = "MBoxOut"
+        elif self.type == 2:
+            Sm.text = "MBoxIn"
+        elif self.type == 3:
+            Sm.text = "Outputs"
+        elif self.type == 4:
+            Sm.text = "Inputs"
 
     def Info(self, prefix=""):
         output = []
