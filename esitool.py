@@ -455,23 +455,50 @@ class stdconfig(Base):
         ):
             for element in mb:
                 if element.tag == "CoE":
-                    coe = 0x0004
+                    coe = 0x04
                 elif element.tag == "EoE":
-                    eoe = 0x0002
+                    eoe = 0x02
                 elif element.tag == "FoE":
-                    foe = 0x0008
+                    foe = 0x08
                 elif element.tag == "VoE":
-                    voe = 0x0020
+                    voe = 0x20
         self.mailbox_protocol = coe | eoe | foe | voe
 
     def xmlWrite(self, base_element):
         Vendor = base_element.find("./Vendor")
         etree.SubElement(Vendor, "Id").text = self.value2xml(self.vendor_id, 8)
         Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
+        Mailbox = base_element.find(
+            f"./Descriptions/Devices/Device[{self.deviceid}]/Mailbox"
+        )
         Type = Device.find("./Type")
         if Type is not None:
             Type.set("ProductCode", self.value2xml(self.product_id, 8))
             Type.set("RevisionNo", self.value2xml(self.revision_id, 8))
+            if bool(self.mailbox_protocol & 0x04):
+                CoE = base_element.find(
+                    f"./Descriptions/Devices/Device[{self.deviceid}]/Mailbox/CoE"
+                )
+                if CoE is None:
+                    etree.SubElement(Mailbox, "CoE")
+            if bool(self.mailbox_protocol & 0x02):
+                EoE = base_element.find(
+                    f"./Descriptions/Devices/Device[{self.deviceid}]/Mailbox/EoE"
+                )
+                if EoE is None:
+                    etree.SubElement(Mailbox, "EoE")
+            if bool(self.mailbox_protocol & 0x08):
+                FoE = base_element.find(
+                    f"./Descriptions/Devices/Device[{self.deviceid}]/Mailbox/FoE"
+                )
+                if FoE is None:
+                    etree.SubElement(Mailbox, "FoE")
+            if bool(self.mailbox_protocol & 0x20):
+                VoE = base_element.find(
+                    f"./Descriptions/Devices/Device[{self.deviceid}]/Mailbox/VoE"
+                )
+                if VoE is None:
+                    etree.SubElement(Mailbox, "VoE")
 
         Eeprom = base_element.find(
             f"./Descriptions/Devices/Device[{self.deviceid}]/Eeprom"
@@ -657,6 +684,7 @@ class general(Base):
 
     def xmlWrite(self, base_element):
         Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
+        Mailbox = etree.SubElement(Device, "Mailbox")
         physics = ""
         ports = [0, 0, 0, 0]
         ports[0] = (self.phys_port01 >> 4) & 0x0F
@@ -679,6 +707,33 @@ class general(Base):
         if Group is not None:
             etree.SubElement(Group, "Type").text = self.value2xmlText(self.groupindex)
             etree.SubElement(Group, "Name").text = "UNKNOWN"
+
+        if self.coe_details:
+            CoE = etree.SubElement(Mailbox, "CoE")
+            if bool(self.coe_details & (0x01 << 1)):
+                CoE.set("SdoInfo", "true")
+            else:
+                CoE.set("SdoInfo", "false")
+            if bool(self.coe_details & (0x01 << 2)):
+                CoE.set("PdoAssign", "true")
+            else:
+                CoE.set("PdoAssign", "false")
+            if bool(self.coe_details & (0x01 << 3)):
+                CoE.set("PdoConfig", "true")
+            else:
+                CoE.set("PdoConfig", "false")
+            if bool(self.coe_details & (0x01 << 4)):
+                CoE.set("PdoUpload", "true")
+            else:
+                CoE.set("PdoUpload", "false")
+            if bool(self.coe_details & (0x01 << 5)):
+                CoE.set("CompleteAccess", "true")
+            else:
+                CoE.set("CompleteAccess", "false")
+        if self.eoe_enabled:
+            etree.SubElement(Mailbox, "EoE")
+        if self.foe_details:
+            etree.SubElement(Mailbox, "FoE")
 
     def Info(self, prefix=""):
         output = []
