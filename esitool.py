@@ -703,7 +703,7 @@ class general(Base):
         if Type is not None:
             Type.text = self.value2xmlText(self.orderindex)
 
-        Group = base_element.find(f"./Descriptions/Groups/Group")
+        Group = base_element.find("./Descriptions/Groups/Group")
         if Group is not None:
             etree.SubElement(Group, "Type").text = self.value2xmlText(self.groupindex)
             etree.SubElement(Group, "Name").text = "UNKNOWN"
@@ -910,12 +910,18 @@ class txpdo(Base):
 
     def xmlWrite(self, base_element):
         Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
+        self.flags |= int(base_element.get("Virtual", 0) in {"true", "1"}) << 5
+        self.flags |= (
+            int(base_element.get("OverwrittenByModule", 0) in {"true", "1"}) << 7
+        )
         element = etree.SubElement(
             Device,
             "TxPdo",
             Sm=str(self.syncmanager),
-            Fixed=self.value2xmlBool(1),
-            Mandatory=self.value2xmlBool(1),
+            Mandatory=self.value2xmlBool(bool(self.flags & 0x01)),
+            Fixed=self.value2xmlBool(bool(self.flags & (0x01 << 4))),
+            Virtual=self.value2xmlBool(bool(self.flags & (0x01 << 5))),
+            OverwrittenByModule=self.value2xmlBool(bool(self.flags & (0x01 << 7))),
         )
         etree.SubElement(element, "Index").text = self.value2xml(self.index, 4)
         etree.SubElement(element, "Name").text = self.value2xmlText(self.name_index)
@@ -1726,8 +1732,8 @@ class Esi(Base):
 
         Vendor = etree.SubElement(root, "Vendor")
         Descriptions = etree.SubElement(root, "Descriptions")
-        Groups = etree.SubElement(Descriptions, "Groups")
-        Group = etree.SubElement(Groups, "Group")
+        # Groups = etree.SubElement(Descriptions, "Groups")
+        # Group = etree.SubElement(Groups, "Group")
         Devices = etree.SubElement(Descriptions, "Devices")
         Device = etree.SubElement(Devices, "Device")
         etree.SubElement(Device, "Type")
