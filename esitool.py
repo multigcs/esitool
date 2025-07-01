@@ -1441,6 +1441,11 @@ class dclock(Base):
         OpMode = etree.SubElement(Dc, "OpMode")
         etree.SubElement(OpMode, "Name").text = self.value2xmlText(self.nameIdx)
         etree.SubElement(OpMode, "Desc").text = self.value2xmlText(self.descIdx)
+
+        etree.SubElement(OpMode, "AssignActivate").text = self.value2xml(
+            self.assignActivate, 2
+        )
+
         etree.SubElement(
             OpMode, "CycleTimeSync0", Factor=self.value2xml(self.sync0CycleFactor)
         ).text = self.value2xml(self.cycleTime0)
