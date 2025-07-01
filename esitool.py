@@ -1015,8 +1015,10 @@ class rxpdo(Base):
             Device,
             "RxPdo",
             Sm=str(self.syncmanager),
-            Fixed=self.value2xmlBool(1),
-            Mandatory=self.value2xmlBool(1),
+            Mandatory=self.value2xmlBool(bool(self.flags & 0x01)),
+            Fixed=self.value2xmlBool(bool(self.flags & (0x01 << 4))),
+            Virtual=self.value2xmlBool(bool(self.flags & (0x01 << 5))),
+            OverwrittenByModule=self.value2xmlBool(bool(self.flags & (0x01 << 7))),
         )
         etree.SubElement(element, "Index").text = self.value2xml(self.index, 4)
         etree.SubElement(element, "Name").text = self.value2xmlText(self.name_index)
