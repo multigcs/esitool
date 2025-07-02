@@ -686,7 +686,9 @@ class general(Base):
     def xmlWrite(self, base_element):
         Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
         Name = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]/Name")
-        GroupType = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]/GroupType")
+        GroupType = base_element.find(
+            f"./Descriptions/Devices/Device[{self.deviceid}]/GroupType"
+        )
         Mailbox = etree.SubElement(Device, "Mailbox")
         physics = ""
         ports = [0, 0, 0, 0]
