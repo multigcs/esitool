@@ -8,6 +8,7 @@
     <Groups>
       <Group>
         <Type>DriveType</Type>
+        <Name>UNKNOWN</Name>
       </Group>
     </Groups>
     <Devices>
@@ -26,6 +27,31 @@
         <Sm Enable="1" StartAddress="#x1400" ControlByte="#x22" DefaultSize="128">MBoxIn</Sm>
         <Sm Enable="1" StartAddress="#x1800" ControlByte="#x64" DefaultSize="0">Outputs</Sm>
         <Sm Enable="1" StartAddress="#x1C00" ControlByte="#x20" DefaultSize="0">Inputs</Sm>
+        <RxPdo Sm="2" Mandatory="true" Fixed="false" Virtual="false" OverwrittenByModule="false">
+          <Index>#x1600</Index>
+          <Name>IO Outputs</Name>
+          <Entry>
+            <Index>#x6040</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Control word</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x60FF</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>TargetVelocity</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6073</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Max current</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+        </RxPdo>
         <TxPdo Sm="3" Mandatory="true" Fixed="false" Virtual="false" OverwrittenByModule="false">
           <Index>#x1A00</Index>
           <Name>IO Inputs</Name>
@@ -65,31 +91,6 @@
             <DataType>INT</DataType>
           </Entry>
         </TxPdo>
-        <RxPdo Sm="2" Mandatory="true" Fixed="false" Virtual="false" OverwrittenByModule="false">
-          <Index>#x1600</Index>
-          <Name>IO Outputs</Name>
-          <Entry>
-            <Index>#x6040</Index>
-            <SubIndex>0</SubIndex>
-            <BitLen>16</BitLen>
-            <Name>Control word</Name>
-            <DataType>UINT</DataType>
-          </Entry>
-          <Entry>
-            <Index>#x60FF</Index>
-            <SubIndex>0</SubIndex>
-            <BitLen>32</BitLen>
-            <Name>TargetVelocity</Name>
-            <DataType>DINT</DataType>
-          </Entry>
-          <Entry>
-            <Index>#x6073</Index>
-            <SubIndex>0</SubIndex>
-            <BitLen>16</BitLen>
-            <Name>Max current</Name>
-            <DataType>UINT</DataType>
-          </Entry>
-        </RxPdo>
         <Dc>
           <OpMode>
             <Name>Synchron</Name>
@@ -109,6 +110,7 @@
           </OpMode>
         </Dc>
         <Eeprom>
+          <ByteSize>2048</ByteSize>
           <ConfigData>00000000000000000000</ConfigData>
           <BootStrap>0000000000000000</BootStrap>
         </Eeprom>

@@ -8,6 +8,7 @@
     <Groups>
       <Group>
         <Type>SomanetC22</Type>
+        <Name>UNKNOWN</Name>
       </Group>
     </Groups>
     <Devices>
@@ -25,45 +26,6 @@
         <Sm Enable="1" StartAddress="#x1400" ControlByte="#x22" DefaultSize="1024">MBoxIn</Sm>
         <Sm Enable="1" StartAddress="#x1800" ControlByte="#x24" DefaultSize="29">Outputs</Sm>
         <Sm Enable="1" StartAddress="#x23FF" ControlByte="#x20" DefaultSize="29">Inputs</Sm>
-        <TxPdo Sm="3" Mandatory="false" Fixed="true" Virtual="false" OverwrittenByModule="false">
-          <Index>#x1A00</Index>
-          <Name>Inputs</Name>
-          <Entry>
-            <Index>#x6041</Index>
-            <SubIndex>0</SubIndex>
-            <BitLen>16</BitLen>
-            <Name>Statusword</Name>
-            <DataType>UINT</DataType>
-          </Entry>
-          <Entry>
-            <Index>#x6061</Index>
-            <SubIndex>0</SubIndex>
-            <BitLen>8</BitLen>
-            <Name>Op Mode Display</Name>
-            <DataType>USINT</DataType>
-          </Entry>
-          <Entry>
-            <Index>#x6064</Index>
-            <SubIndex>0</SubIndex>
-            <BitLen>32</BitLen>
-            <Name>Position Value</Name>
-            <DataType>UDINT</DataType>
-          </Entry>
-          <Entry>
-            <Index>#x606C</Index>
-            <SubIndex>0</SubIndex>
-            <BitLen>32</BitLen>
-            <Name>Velocity Value</Name>
-            <DataType>UDINT</DataType>
-          </Entry>
-          <Entry>
-            <Index>#x6077</Index>
-            <SubIndex>0</SubIndex>
-            <BitLen>16</BitLen>
-            <Name>Torque Value</Name>
-            <DataType>UINT</DataType>
-          </Entry>
-        </TxPdo>
         <RxPdo Sm="2" Mandatory="false" Fixed="true" Virtual="false" OverwrittenByModule="false">
           <Index>#x1600</Index>
           <Name>Outputs</Name>
@@ -103,6 +65,45 @@
             <DataType>UDINT</DataType>
           </Entry>
         </RxPdo>
+        <TxPdo Sm="3" Mandatory="false" Fixed="true" Virtual="false" OverwrittenByModule="false">
+          <Index>#x1A00</Index>
+          <Name>Inputs</Name>
+          <Entry>
+            <Index>#x6041</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Statusword</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6061</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>8</BitLen>
+            <Name>Op Mode Display</Name>
+            <DataType>USINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6064</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Position Value</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x606C</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Velocity Value</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6077</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Torque Value</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+        </TxPdo>
         <Dc>
           <OpMode>
             <Name>Synchron</Name>
@@ -122,6 +123,7 @@
           </OpMode>
         </Dc>
         <Eeprom>
+          <ByteSize>2048</ByteSize>
           <ConfigData>080e0288000000000000</ConfigData>
           <BootStrap>0000000000000000</BootStrap>
         </Eeprom>

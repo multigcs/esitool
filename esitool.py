@@ -297,6 +297,7 @@ class preamble(Base):
     def xmlWrite(self, base_element):
         Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
         Eeprom = etree.SubElement(Device, "Eeprom")
+        etree.SubElement(Eeprom, "ByteSize").text = "2048"
         ConfigData = etree.SubElement(Eeprom, "ConfigData")
         blist = []
         blist += struct.pack("<H", self.pdi_ctrl)
@@ -708,7 +709,7 @@ class general(Base):
         Group = base_element.find("./Descriptions/Groups/Group")
         if Group is not None:
             etree.SubElement(Group, "Type").text = self.value2xmlText(self.groupindex)
-            # etree.SubElement(Group, "Name").text = "UNKNOWN"
+            etree.SubElement(Group, "Name").text = "UNKNOWN"
 
         if self.coe_details:
             CoE = etree.SubElement(Mailbox, "CoE")
@@ -1774,7 +1775,19 @@ class Esi(Base):
         Device = etree.SubElement(Devices, "Device")
         etree.SubElement(Device, "Type")
 
-        for ctype in categorys:
+        categorys_out = {
+            0: "nop",
+            10: "strings",
+            20: "datatypes",
+            30: "general",
+            40: "fmmu",
+            41: "syncm",
+            51: "rxpdo",
+            50: "txpdo",
+            60: "dclock",
+        }
+
+        for ctype in categorys_out:
             for cat_num, catalog in self.catalogs.items():
                 if catalog.cat_type != ctype:
                     continue

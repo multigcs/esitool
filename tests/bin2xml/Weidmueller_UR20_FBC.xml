@@ -8,6 +8,7 @@
     <Groups>
       <Group>
         <Type>Coupler</Type>
+        <Name>UNKNOWN</Name>
       </Group>
     </Groups>
     <Devices>
@@ -28,122 +29,6 @@
         <Sm Enable="1" StartAddress="#x1400" ControlByte="#x22" DefaultSize="512">MBoxIn</Sm>
         <Sm Enable="0" StartAddress="#x1800" ControlByte="#x64" DefaultSize="0">Outputs</Sm>
         <Sm Enable="0" StartAddress="#x2400" ControlByte="#x20" DefaultSize="0">Inputs</Sm>
-        <TxPdo Sm="3" Mandatory="true" Fixed="true" Virtual="false" OverwrittenByModule="false">
-          <Index>#x1AFF</Index>
-          <Name>Mapping TxPDO Device Status</Name>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>1</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Summarized module diagnosis</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>2</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Station pending</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>3</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Errorbit 2</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>4</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Systembus error</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>5</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Errorbit 4</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>6</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Errorbit 5</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>7</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>I/O-Configuration error</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>8</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Masterconfiguration error</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>9</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Errorbit 8</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>10</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Errorbit 9</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>11</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Force mode active</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>12</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Errorbit 11</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>13</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Errorbit 12</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>14</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Uout error</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>15</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Usys error</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-          <Entry>
-            <Index>#xF100</Index>
-            <SubIndex>16</SubIndex>
-            <BitLen>1</BitLen>
-            <Name>Errorbit 15</Name>
-            <DataType>BOOL</DataType>
-          </Entry>
-        </TxPdo>
         <RxPdo Sm="2" Mandatory="true" Fixed="true" Virtual="false" OverwrittenByModule="false">
           <Index>#x16FF</Index>
           <Name>Mapping RxPDO Device Control</Name>
@@ -260,6 +145,122 @@
             <DataType>BOOL</DataType>
           </Entry>
         </RxPdo>
+        <TxPdo Sm="3" Mandatory="true" Fixed="true" Virtual="false" OverwrittenByModule="false">
+          <Index>#x1AFF</Index>
+          <Name>Mapping TxPDO Device Status</Name>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>1</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Summarized module diagnosis</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>2</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Station pending</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>3</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Errorbit 2</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>4</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Systembus error</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>5</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Errorbit 4</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>6</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Errorbit 5</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>7</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>I/O-Configuration error</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>8</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Masterconfiguration error</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>9</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Errorbit 8</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>10</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Errorbit 9</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>11</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Force mode active</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>12</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Errorbit 11</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>13</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Errorbit 12</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>14</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Uout error</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>15</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Usys error</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>16</SubIndex>
+            <BitLen>1</BitLen>
+            <Name>Errorbit 15</Name>
+            <DataType>BOOL</DataType>
+          </Entry>
+        </TxPdo>
         <Dc>
           <OpMode>
             <Name>SM_SYNCHRON</Name>
@@ -279,6 +280,7 @@
           </OpMode>
         </Dc>
         <Eeprom>
+          <ByteSize>2048</ByteSize>
           <ConfigData>080e046e000061000000</ConfigData>
           <BootStrap>0012140200151402</BootStrap>
         </Eeprom>

@@ -8,6 +8,7 @@
     <Groups>
       <Group>
         <Type>Coupler</Type>
+        <Name>UNKNOWN</Name>
       </Group>
     </Groups>
     <Devices>
@@ -44,6 +45,7 @@
           </Entry>
         </TxPdo>
         <Eeprom>
+          <ByteSize>2048</ByteSize>
           <ConfigData>080c0288000000000000</ConfigData>
           <BootStrap>0012140200151402</BootStrap>
         </Eeprom>
