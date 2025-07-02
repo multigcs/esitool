@@ -4,7 +4,7 @@ from esitool import Esi
 
 
 filenames = []
-for filename in glob.glob("tests/*.xml"):
+for filename in glob.glob("tests/xml2bin/*.xml"):
     name = filename.replace(".xml", "")
     filenames.append(name)
 
@@ -32,22 +32,22 @@ def test_xml2bin(name):
     "name, deviceid, lcid",
     [
         (
-            "tests/siem",
+            "tests/xml2bin/siem",
             "1",
             "1031",
         ),
         (
-            "tests/siem",
+            "tests/xml2bin/siem",
             "2",
             "1031",
         ),
         (
-            "tests/siem",
+            "tests/xml2bin/siem",
             "1",
             "1033",
         ),
         (
-            "tests/siem",
+            "tests/xml2bin/siem",
             "2",
             "1033",
         ),
@@ -55,13 +55,9 @@ def test_xml2bin(name):
 )
 def test_xml2bin_options(name, deviceid, lcid):
     esi = Esi(f"{name}.xml", lcid=lcid, deviceid=deviceid)
-
     bindata = esi.binWrite()
-
     open(f"{name}_{deviceid}_{lcid}.bin", "wb").write(bindata)
-
     expected = open(f"{name}_{deviceid}_{lcid}.bin", "rb").read()
-
     if list(expected) == list(bindata):
         print("------- OK -------")
     for pos in range(len(expected)):

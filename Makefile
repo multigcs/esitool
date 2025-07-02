@@ -1,5 +1,5 @@
 
-XMLFILES := $(shell find tests -name '*.xml')
+XMLFILES := $(shell find tests/xml2bin/ -name '*.xml')
 BINFILES = $(XMLFILES:.xml=.bin)
 
 all: format test
