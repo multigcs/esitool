@@ -699,6 +699,8 @@ class general(Base):
         Device.set("Physics", physics)
 
         etree.SubElement(Device, "Name").text = self.value2xmlText(self.nameindex)
+        etree.SubElement(Device, "GroupType").text = self.value2xmlText(self.groupindex)
+
         Type = Device.find("./Type")
         if Type is not None:
             Type.text = self.value2xmlText(self.orderindex)
@@ -706,7 +708,7 @@ class general(Base):
         Group = base_element.find("./Descriptions/Groups/Group")
         if Group is not None:
             etree.SubElement(Group, "Type").text = self.value2xmlText(self.groupindex)
-            etree.SubElement(Group, "Name").text = "UNKNOWN"
+            # etree.SubElement(Group, "Name").text = "UNKNOWN"
 
         if self.coe_details:
             CoE = etree.SubElement(Mailbox, "CoE")
@@ -1766,8 +1768,8 @@ class Esi(Base):
 
         Vendor = etree.SubElement(root, "Vendor")
         Descriptions = etree.SubElement(root, "Descriptions")
-        # Groups = etree.SubElement(Descriptions, "Groups")
-        # Group = etree.SubElement(Groups, "Group")
+        Groups = etree.SubElement(Descriptions, "Groups")
+        etree.SubElement(Groups, "Group")
         Devices = etree.SubElement(Descriptions, "Devices")
         Device = etree.SubElement(Devices, "Device")
         etree.SubElement(Device, "Type")
@@ -1782,6 +1784,11 @@ class Esi(Base):
         self.stdconfig.xmlWrite(root)
 
         etree.SubElement(Vendor, "Name").text = "UNKNOWN"
+
+        # cleanup
+        Mailbox = root.find("./Descriptions/Devices/Device/Mailbox")
+        if not list(Mailbox):
+            Mailbox.getparent().remove(Mailbox)
 
         return (
             '<?xml version="1.0" encoding="ISO8859-1"?>\n'
