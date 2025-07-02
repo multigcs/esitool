@@ -14,9 +14,6 @@
     <Devices>
       <Device Physics="YY">
         <Type ProductCode="#x000AB123" RevisionNo="#x00000002"></Type>
-        <Mailbox>
-          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="true" PdoUpload="true" CompleteAccess="false"/>
-        </Mailbox>
         <Name>2-channel Hypergalactic input superimpermanator</Name>
         <GroupType>DigIn</GroupType>
         <Fmmu>Outputs</Fmmu>
@@ -49,6 +46,9 @@
             <DataType>DINT</DataType>
           </Entry>
         </TxPdo>
+        <Mailbox>
+          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="true" PdoUpload="true" CompleteAccess="false"/>
+        </Mailbox>
         <Eeprom>
           <ByteSize>2048</ByteSize>
           <ConfigData>80060344640000000000</ConfigData>

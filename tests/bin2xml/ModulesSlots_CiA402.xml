@@ -14,10 +14,6 @@
     <Devices>
       <Device Physics="YY">
         <Type ProductCode="#x00010000" RevisionNo="#x00000000"></Type>
-        <Mailbox>
-          <CoE SdoInfo="true" PdoAssign="true" PdoConfig="true" PdoUpload="false" CompleteAccess="false"/>
-          <FoE/>
-        </Mailbox>
         <Name>DS402 Drive (Modules/Slots)</Name>
         <GroupType>ETG2001ModulesSlots</GroupType>
         <Fmmu>Outputs</Fmmu>
@@ -26,6 +22,10 @@
         <Sm Enable="1" StartAddress="#x1400" ControlByte="#x22" DefaultSize="128">MBoxIn</Sm>
         <Sm Enable="1" StartAddress="#x1800" ControlByte="#x64" DefaultSize="40">Outputs</Sm>
         <Sm Enable="1" StartAddress="#x1C00" ControlByte="#x20" DefaultSize="22">Inputs</Sm>
+        <Mailbox>
+          <CoE SdoInfo="true" PdoAssign="true" PdoConfig="true" PdoUpload="false" CompleteAccess="false"/>
+          <FoE/>
+        </Mailbox>
         <Dc>
           <OpMode>
             <Name>Synchron</Name>

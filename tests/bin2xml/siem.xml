@@ -14,9 +14,6 @@
     <Devices>
       <Device Physics="YY">
         <Type ProductCode="#x00362200" RevisionNo="#x00010001"></Type>
-        <Mailbox>
-          <CoE SdoInfo="true" PdoAssign="true" PdoConfig="false" PdoUpload="false" CompleteAccess="false"/>
-        </Mailbox>
         <Name>SM SD2 Drive 03622xx</Name>
         <GroupType>DriveType</GroupType>
         <Fmmu>Outputs</Fmmu>
@@ -91,6 +88,9 @@
             <DataType>INT</DataType>
           </Entry>
         </TxPdo>
+        <Mailbox>
+          <CoE SdoInfo="true" PdoAssign="true" PdoConfig="false" PdoUpload="false" CompleteAccess="false"/>
+        </Mailbox>
         <Dc>
           <OpMode>
             <Name>Synchron</Name>

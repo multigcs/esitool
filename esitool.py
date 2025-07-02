@@ -685,6 +685,8 @@ class general(Base):
 
     def xmlWrite(self, base_element):
         Device = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]")
+        Name = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]/Name")
+        GroupType = base_element.find(f"./Descriptions/Devices/Device[{self.deviceid}]/GroupType")
         Mailbox = etree.SubElement(Device, "Mailbox")
         physics = ""
         ports = [0, 0, 0, 0]
@@ -699,8 +701,8 @@ class general(Base):
                 physics += "K"
         Device.set("Physics", physics)
 
-        etree.SubElement(Device, "Name").text = self.value2xmlText(self.nameindex)
-        etree.SubElement(Device, "GroupType").text = self.value2xmlText(self.groupindex)
+        Name.text = self.value2xmlText(self.nameindex)
+        GroupType.text = self.value2xmlText(self.groupindex)
 
         Type = Device.find("./Type")
         if Type is not None:
@@ -711,6 +713,8 @@ class general(Base):
             etree.SubElement(Group, "Type").text = self.value2xmlText(self.groupindex)
             etree.SubElement(Group, "Name").text = "UNKNOWN"
 
+        if self.eoe_enabled:
+            etree.SubElement(Mailbox, "EoE")
         if self.coe_details:
             CoE = etree.SubElement(Mailbox, "CoE")
             if bool(self.coe_details & (0x01 << 1)):
@@ -733,8 +737,6 @@ class general(Base):
                 CoE.set("CompleteAccess", "true")
             else:
                 CoE.set("CompleteAccess", "false")
-        if self.eoe_enabled:
-            etree.SubElement(Mailbox, "EoE")
         if self.foe_details:
             etree.SubElement(Mailbox, "FoE")
 
@@ -1774,16 +1776,18 @@ class Esi(Base):
         Devices = etree.SubElement(Descriptions, "Devices")
         Device = etree.SubElement(Devices, "Device")
         etree.SubElement(Device, "Type")
+        etree.SubElement(Device, "Name")
+        etree.SubElement(Device, "GroupType")
 
         categorys_out = {
             0: "nop",
             10: "strings",
             20: "datatypes",
-            30: "general",
             40: "fmmu",
             41: "syncm",
             51: "rxpdo",
             50: "txpdo",
+            30: "general",
             60: "dclock",
         }
 

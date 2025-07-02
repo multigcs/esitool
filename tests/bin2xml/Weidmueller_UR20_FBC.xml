@@ -14,11 +14,6 @@
     <Devices>
       <Device Physics="YY">
         <Type ProductCode="#x4F911C30" RevisionNo="#x00000001"></Type>
-        <Mailbox>
-          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="true" PdoUpload="false" CompleteAccess="false"/>
-          <EoE/>
-          <FoE/>
-        </Mailbox>
         <Name>UR20-FBC-EC / 1334910000</Name>
         <GroupType>Coupler</GroupType>
         <Fmmu>Outputs</Fmmu>
@@ -261,6 +256,11 @@
             <DataType>BOOL</DataType>
           </Entry>
         </TxPdo>
+        <Mailbox>
+          <EoE/>
+          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="true" PdoUpload="false" CompleteAccess="false"/>
+          <FoE/>
+        </Mailbox>
         <Dc>
           <OpMode>
             <Name>SM_SYNCHRON</Name>

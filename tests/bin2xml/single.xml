@@ -14,10 +14,6 @@
     <Devices>
       <Device Physics="YY">
         <Type ProductCode="#x00000201" RevisionNo="#x0A000002"></Type>
-        <Mailbox>
-          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="false" PdoUpload="false" CompleteAccess="false"/>
-          <FoE/>
-        </Mailbox>
         <Name>CiA402 Drive</Name>
         <GroupType>SomanetC22</GroupType>
         <Fmmu>Outputs</Fmmu>
@@ -104,6 +100,10 @@
             <DataType>UINT</DataType>
           </Entry>
         </TxPdo>
+        <Mailbox>
+          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="false" PdoUpload="false" CompleteAccess="false"/>
+          <FoE/>
+        </Mailbox>
         <Dc>
           <OpMode>
             <Name>Synchron</Name>

@@ -14,10 +14,6 @@
     <Devices>
       <Device Physics="YY">
         <Type ProductCode="#x0531EC00" RevisionNo="#x00000012"></Type>
-        <Mailbox>
-          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="true" PdoUpload="true" CompleteAccess="false"/>
-          <FoE/>
-        </Mailbox>
         <Name>VIPA 053-1EC00 EtherCAT Fieldbus coupler (MDP)</Name>
         <GroupType>Coupler</GroupType>
         <Fmmu>Outputs</Fmmu>
@@ -44,6 +40,10 @@
             <DataType>UDINT</DataType>
           </Entry>
         </TxPdo>
+        <Mailbox>
+          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="true" PdoUpload="true" CompleteAccess="false"/>
+          <FoE/>
+        </Mailbox>
         <Eeprom>
           <ByteSize>2048</ByteSize>
           <ConfigData>080c0288000000000000</ConfigData>
