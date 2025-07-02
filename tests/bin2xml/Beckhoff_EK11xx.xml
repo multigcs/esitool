@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="ISO8859-1"?>
+<EtherCATInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="EtherCATInfo.xsd" Version="1.6">
+  <Vendor>
+    <Id>#x00000002</Id>
+    <Name>UNKNOWN</Name>
+  </Vendor>
+  <Descriptions>
+    <Groups>
+      <Group>
+        <Type>System</Type>
+      </Group>
+    </Groups>
+    <Devices>
+      <Device Physics="KYY">
+        <Type ProductCode="#x044C2C52" RevisionNo="#x00000000"></Type>
+        <Name>EK1100 EtherCAT Coupler (0.5A E-Bus11)</Name>
+        <GroupType>System</GroupType>
+        <Eeprom>
+          <ConfigData>00010000000000000000</ConfigData>
+          <BootStrap>0000000000000000</BootStrap>
+        </Eeprom>
+      </Device>
+    </Devices>
+  </Descriptions>
+</EtherCATInfo>

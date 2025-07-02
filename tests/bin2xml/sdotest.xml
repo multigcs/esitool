@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="ISO8859-1"?>
+<EtherCATInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="EtherCATInfo.xsd" Version="1.6">
+  <Vendor>
+    <Id>#x00000000</Id>
+    <Name>UNKNOWN</Name>
+  </Vendor>
+  <Descriptions>
+    <Groups>
+      <Group>
+        <Type>DigIn</Type>
+      </Group>
+    </Groups>
+    <Devices>
+      <Device Physics="YY">
+        <Type ProductCode="#x000AB123" RevisionNo="#x00000002"></Type>
+        <Mailbox>
+          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="true" PdoUpload="true" CompleteAccess="false"/>
+        </Mailbox>
+        <Name>2-channel Hypergalactic input superimpermanator</Name>
+        <GroupType>DigIn</GroupType>
+        <Fmmu>Outputs</Fmmu>
+        <Fmmu>Inputs</Fmmu>
+        <Fmmu>MBoxState</Fmmu>
+        <Fmmu/>
+        <Sm Enable="1" StartAddress="#x1000" ControlByte="#x26" DefaultSize="512">MBoxOut</Sm>
+        <Sm Enable="1" StartAddress="#x1200" ControlByte="#x22" DefaultSize="512">MBoxIn</Sm>
+        <Sm Enable="1" StartAddress="#x1400" ControlByte="#x24" DefaultSize="0">Outputs</Sm>
+        <Sm Enable="1" StartAddress="#x1A00" ControlByte="#x20" DefaultSize="0">Inputs</Sm>
+        <TxPdo Sm="3" Mandatory="true" Fixed="true" Virtual="false" OverwrittenByModule="false">
+          <Index>#x1A00</Index>
+          <Name>Variable 2</Name>
+          <Entry>
+            <Index>#x6000</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>New Variable 2</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+        </TxPdo>
+        <RxPdo Sm="2" Mandatory="true" Fixed="true" Virtual="false" OverwrittenByModule="false">
+          <Index>#x1400</Index>
+          <Name>Variable 1</Name>
+          <Entry>
+            <Index>#x7000</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>New Variable 1</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+        </RxPdo>
+        <Eeprom>
+          <ConfigData>80060344640000000000</ConfigData>
+          <BootStrap>0000000000000000</BootStrap>
+        </Eeprom>
+      </Device>
+    </Devices>
+  </Descriptions>
+</EtherCATInfo>

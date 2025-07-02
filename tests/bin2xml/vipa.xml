@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="ISO8859-1"?>
+<EtherCATInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="EtherCATInfo.xsd" Version="1.6">
+  <Vendor>
+    <Id>#x0000AFFE</Id>
+    <Name>UNKNOWN</Name>
+  </Vendor>
+  <Descriptions>
+    <Groups>
+      <Group>
+        <Type>Coupler</Type>
+      </Group>
+    </Groups>
+    <Devices>
+      <Device Physics="YY">
+        <Type ProductCode="#x0531EC00" RevisionNo="#x00000012"></Type>
+        <Mailbox>
+          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="true" PdoUpload="true" CompleteAccess="false"/>
+          <FoE/>
+        </Mailbox>
+        <Name>VIPA 053-1EC00 EtherCAT Fieldbus coupler (MDP)</Name>
+        <GroupType>Coupler</GroupType>
+        <Fmmu>Outputs</Fmmu>
+        <Fmmu>Inputs</Fmmu>
+        <Sm Enable="1" StartAddress="#x1C00" ControlByte="#x26" DefaultSize="512">MBoxOut</Sm>
+        <Sm Enable="1" StartAddress="#x1E00" ControlByte="#x22" DefaultSize="512">MBoxIn</Sm>
+        <Sm Enable="0" StartAddress="#x1000" ControlByte="#x24" DefaultSize="0">Outputs</Sm>
+        <Sm Enable="0" StartAddress="#x1600" ControlByte="#x00" DefaultSize="0">Inputs</Sm>
+        <TxPdo Sm="3" Mandatory="true" Fixed="true" Virtual="false" OverwrittenByModule="false">
+          <Index>#x1AFF</Index>
+          <Name>Inputs</Name>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>1</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Hardware Interrupt Counter</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#xF100</Index>
+            <SubIndex>2</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Diagnostic Interrupt Counter</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+        </TxPdo>
+        <Eeprom>
+          <ConfigData>080c0288000000000000</ConfigData>
+          <BootStrap>0012140200151402</BootStrap>
+        </Eeprom>
+      </Device>
+    </Devices>
+  </Descriptions>
+</EtherCATInfo>

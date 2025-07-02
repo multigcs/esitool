@@ -29,6 +29,21 @@ def test_xml2bin(name):
 
 
 @pytest.mark.parametrize(
+    "name",
+    filenames,
+)
+def test_bin2xml(name):
+    esi = Esi(f"{name}.bin")
+    xmldata = esi.xmlWrite().strip()
+    if not glob.glob(f"{name.replace('xml2bin', 'bin2xml')}.xml"):
+        open(f"{name.replace('xml2bin', 'bin2xml')}.xml", "w").write(xmldata)
+
+    expected = open(f"{name.replace('xml2bin', 'bin2xml')}.xml", "r").read().strip()
+
+    assert expected == xmldata
+
+
+@pytest.mark.parametrize(
     "name, deviceid, lcid",
     [
         (

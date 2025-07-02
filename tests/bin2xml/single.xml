@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="ISO8859-1"?>
+<EtherCATInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="EtherCATInfo.xsd" Version="1.6">
+  <Vendor>
+    <Id>#x000022D2</Id>
+    <Name>UNKNOWN</Name>
+  </Vendor>
+  <Descriptions>
+    <Groups>
+      <Group>
+        <Type>SomanetC22</Type>
+      </Group>
+    </Groups>
+    <Devices>
+      <Device Physics="YY">
+        <Type ProductCode="#x00000201" RevisionNo="#x0A000002"></Type>
+        <Mailbox>
+          <CoE SdoInfo="true" PdoAssign="false" PdoConfig="false" PdoUpload="false" CompleteAccess="false"/>
+          <FoE/>
+        </Mailbox>
+        <Name>CiA402 Drive</Name>
+        <GroupType>SomanetC22</GroupType>
+        <Fmmu>Outputs</Fmmu>
+        <Fmmu>Inputs</Fmmu>
+        <Sm Enable="1" StartAddress="#x1000" ControlByte="#x26" DefaultSize="1024">MBoxOut</Sm>
+        <Sm Enable="1" StartAddress="#x1400" ControlByte="#x22" DefaultSize="1024">MBoxIn</Sm>
+        <Sm Enable="1" StartAddress="#x1800" ControlByte="#x24" DefaultSize="29">Outputs</Sm>
+        <Sm Enable="1" StartAddress="#x23FF" ControlByte="#x20" DefaultSize="29">Inputs</Sm>
+        <TxPdo Sm="3" Mandatory="false" Fixed="true" Virtual="false" OverwrittenByModule="false">
+          <Index>#x1A00</Index>
+          <Name>Inputs</Name>
+          <Entry>
+            <Index>#x6041</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Statusword</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6061</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>8</BitLen>
+            <Name>Op Mode Display</Name>
+            <DataType>USINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6064</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Position Value</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x606C</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Velocity Value</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6077</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Torque Value</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+        </TxPdo>
+        <RxPdo Sm="2" Mandatory="false" Fixed="true" Virtual="false" OverwrittenByModule="false">
+          <Index>#x1600</Index>
+          <Name>Outputs</Name>
+          <Entry>
+            <Index>#x6040</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Controlword</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6060</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>8</BitLen>
+            <Name>Op Modes</Name>
+            <DataType>USINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6071</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Target Torque</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x607A</Index>
+            <SubIndex>4</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Target Position</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x60FF</Index>
+            <SubIndex>5</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Target Velocity</Name>
+            <DataType>UDINT</DataType>
+          </Entry>
+        </RxPdo>
+        <Dc>
+          <OpMode>
+            <Name>Synchron</Name>
+            <Desc>SM-Synchron</Desc>
+            <AssignActivate>#x00</AssignActivate>
+            <CycleTimeSync0 Factor="0">0</CycleTimeSync0>
+            <ShiftTimeSync0>0</ShiftTimeSync0>
+            <ShiftTimeSync1>0</ShiftTimeSync1>
+          </OpMode>
+          <OpMode>
+            <Name>DC</Name>
+            <Desc>DC-Synchron</Desc>
+            <AssignActivate>#x00</AssignActivate>
+            <CycleTimeSync0 Factor="0">0</CycleTimeSync0>
+            <ShiftTimeSync0>0</ShiftTimeSync0>
+            <ShiftTimeSync1>0</ShiftTimeSync1>
+          </OpMode>
+        </Dc>
+        <Eeprom>
+          <ConfigData>080e0288000000000000</ConfigData>
+          <BootStrap>0000000000000000</BootStrap>
+        </Eeprom>
+      </Device>
+    </Devices>
+  </Descriptions>
+</EtherCATInfo>

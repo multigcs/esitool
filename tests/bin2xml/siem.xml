@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="ISO8859-1"?>
+<EtherCATInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="EtherCATInfo.xsd" Version="1.6">
+  <Vendor>
+    <Id>#x000005B0</Id>
+    <Name>UNKNOWN</Name>
+  </Vendor>
+  <Descriptions>
+    <Groups>
+      <Group>
+        <Type>DriveType</Type>
+      </Group>
+    </Groups>
+    <Devices>
+      <Device Physics="YY">
+        <Type ProductCode="#x00362200" RevisionNo="#x00010001"></Type>
+        <Mailbox>
+          <CoE SdoInfo="true" PdoAssign="true" PdoConfig="false" PdoUpload="false" CompleteAccess="false"/>
+        </Mailbox>
+        <Name>SM SD2 Drive 03622xx</Name>
+        <GroupType>DriveType</GroupType>
+        <Fmmu>Outputs</Fmmu>
+        <Fmmu>Inputs</Fmmu>
+        <Fmmu>MBoxState</Fmmu>
+        <Fmmu/>
+        <Sm Enable="1" StartAddress="#x1000" ControlByte="#x26" DefaultSize="128">MBoxOut</Sm>
+        <Sm Enable="1" StartAddress="#x1400" ControlByte="#x22" DefaultSize="128">MBoxIn</Sm>
+        <Sm Enable="1" StartAddress="#x1800" ControlByte="#x64" DefaultSize="0">Outputs</Sm>
+        <Sm Enable="1" StartAddress="#x1C00" ControlByte="#x20" DefaultSize="0">Inputs</Sm>
+        <TxPdo Sm="3" Mandatory="true" Fixed="false" Virtual="false" OverwrittenByModule="false">
+          <Index>#x1A00</Index>
+          <Name>IO Inputs</Name>
+          <Entry>
+            <Index>#x6041</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Status Word</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x606C</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>ActualVelocity</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6078</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Current actual value</Name>
+            <DataType>INT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6064</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>Position actual value</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x2046</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Error Latched Error</Name>
+            <DataType>INT</DataType>
+          </Entry>
+        </TxPdo>
+        <RxPdo Sm="2" Mandatory="true" Fixed="false" Virtual="false" OverwrittenByModule="false">
+          <Index>#x1600</Index>
+          <Name>IO Outputs</Name>
+          <Entry>
+            <Index>#x6040</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Control word</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x60FF</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>32</BitLen>
+            <Name>TargetVelocity</Name>
+            <DataType>DINT</DataType>
+          </Entry>
+          <Entry>
+            <Index>#x6073</Index>
+            <SubIndex>0</SubIndex>
+            <BitLen>16</BitLen>
+            <Name>Max current</Name>
+            <DataType>UINT</DataType>
+          </Entry>
+        </RxPdo>
+        <Dc>
+          <OpMode>
+            <Name>Synchron</Name>
+            <Desc>SM-Synchron</Desc>
+            <AssignActivate>#x00</AssignActivate>
+            <CycleTimeSync0 Factor="0">0</CycleTimeSync0>
+            <ShiftTimeSync0>0</ShiftTimeSync0>
+            <ShiftTimeSync1>0</ShiftTimeSync1>
+          </OpMode>
+          <OpMode>
+            <Name>DC</Name>
+            <Desc>DC-Synchron</Desc>
+            <AssignActivate>#x00</AssignActivate>
+            <CycleTimeSync0 Factor="0">500000</CycleTimeSync0>
+            <ShiftTimeSync0>0</ShiftTimeSync0>
+            <ShiftTimeSync1>12000</ShiftTimeSync1>
+          </OpMode>
+        </Dc>
+        <Eeprom>
+          <ConfigData>00000000000000000000</ConfigData>
+          <BootStrap>0000000000000000</BootStrap>
+        </Eeprom>
+      </Device>
+    </Devices>
+  </Descriptions>
+</EtherCATInfo>
