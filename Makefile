@@ -16,4 +16,5 @@ check:
 testfiles: ${BINFILES}
 
 tests/%.bin: tests/%.xml
+	xmllint --schema tests/EtherCATInfo.xsd "$<" >/dev/null
 	siitool -m -c -o $@ "$<"
