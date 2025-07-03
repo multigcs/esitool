@@ -22,12 +22,12 @@ Ethercat ESI-File Tool
 
 Display infos of an .bin file:
 ```
-python3 esitool.py tests/single.bin -i 
+python3 esitool.py tests/xml2bin/single.bin -i 
 ```
 
 Convert .xml into .bin:
 ```
-python3 esitool.py -bw tests/single.bin tests/single.xml
+python3 esitool.py -bs single.bin tests/xml2bin/single.xml
 ```
 
 write .bin to eeprom on 1st ethercat device
@@ -38,5 +38,5 @@ ethercat sii_write -p 0 FILE.bin
 ## running tests
 
 ```
-make tests
+make test
 ```
